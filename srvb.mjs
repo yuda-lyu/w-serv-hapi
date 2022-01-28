@@ -12,7 +12,7 @@ async function run() {
 
     //WServHapiServer
     let wshs = WServHapiServer({
-        port: 9000,
+        port: 8080,
         apis: [],
         cbGetUserIDFromToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
@@ -44,8 +44,8 @@ run()
 //     { n: 1, nModified: 1, ok: 1 }
 // ]
 // save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://localhost:9000
-// Server[port:9000]: open
+// Server running at: http://localhost:8080
+// Server[port:8080]: open
 // update tabA
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 // repeat...

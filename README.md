@@ -129,7 +129,7 @@ async function run() {
 
     //WServHapiServer
     let wshs = WServHapiServer({
-        port: 9000,
+        port: 8080,
         apis: [],
         cbGetUserIDFromToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
@@ -164,8 +164,8 @@ run()
 //     { n: 1, nModified: 1, ok: 1 }
 // ]
 // save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://localhost:9000
-// Server[port:9000]: open
+// Server running at: http://localhost:8080
+// Server[port:8080]: open
 // update tabA
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 // repeat...
@@ -185,7 +185,7 @@ async function client() {
         FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname
-            return 'http://localhost:9000'
+            return 'http://localhost:8080'
         },
         useWaitToken: false,
         getToken: () => {
@@ -281,7 +281,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.0/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.1/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
@@ -297,7 +297,7 @@ async function client() {
         // FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname
-            return 'http://localhost:9000'
+            return 'http://localhost:8080'
         },
         useWaitToken: false,
         getToken: () => {
