@@ -131,7 +131,7 @@ async function run() {
     let wshs = WServHapiServer({
         port: 8080,
         apis: [],
-        cbGetUserIDFromToken: async (token) => { //可使用async或sync函數
+        getUserIDFromToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
         useDbORM: true,
