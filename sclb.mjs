@@ -36,7 +36,7 @@ async function client() {
 
         },
         recvData: (r) => {
-            console.log('sync data', r)
+            console.log('recvData', r)
             //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
         },
     })
@@ -47,6 +47,7 @@ client()
     .catch((err) => {
         console.log(err)
     })
+
 // getServerMethods {
 //   tabA: {
 //     select: [AsyncFunction: f],
@@ -71,7 +72,7 @@ client()
 //   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
 //   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 // ]
-// sync data {
+// recvData {
 //   tableName: 'tabA',
 //   timeTag: '2022-01-28T09:54:05+08:00|29azjN',
 //   data: [

@@ -103,14 +103,19 @@ async function run() {
     ]
     await saveData('tabB', r)
 
-    setInterval(() => {
-        console.log('update tabA')
+    let n = 0
+    let tn = setInterval(() => {
+        n++
+        console.log('update tabA', n)
         r = {
             id: 'id-tabA-peter',
             name: 'peter',
             value: Math.random(),
         }
         saveData('tabA', r)
+        if (n >= 5) {
+            clearInterval(tn)
+        }
     }, 3000)
 
     let procCommon = async (userId, tableName, methodName, input) => {
@@ -158,18 +163,25 @@ run()
     .catch((err) => {
         console.log(err)
     })
+
 // save then tabA [
-//     { n: 1, nModified: 1, ok: 1 },
-//     { n: 1, nModified: 1, ok: 1 },
-//     { n: 1, nModified: 1, ok: 1 }
+//   { n: 1, nModified: 1, ok: 1 },
+//   { n: 1, nModified: 1, ok: 1 },
+//   { n: 1, nModified: 1, ok: 1 }
 // ]
 // save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://localhost:8080
+// Server running at: http://DESKTOP-5UNLNF8:8080
 // Server[port:8080]: open
-// update tabA
+// update tabA 1
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
-// repeat...
-
+// update tabA 2
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 3
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 4
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 5
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 ```
 
 #### Example for w-serv-hapi-client:
@@ -228,8 +240,26 @@ async function client() {
 
         },
         recvData: (r) => {
-            console.log('sync data', r)
+            console.log('recvData', r)
             //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
+        },
+        getRefreshState: (r) => {
+            console.log('getRefreshState', 'needToRefresh', r.needToRefresh)
+        },
+        getRefreshTable: (r) => {
+            console.log('getRefreshTable', 'tableName', r.tableName, 'timeTag', r.timeTag)
+        },
+        getBeforeUpdateTableTags: (r) => {
+            console.log('getBeforeUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
+        },
+        getAfterUpdateTableTags: (r) => {
+            console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
+        },
+        getBeforePollingTableTags: () => {
+            console.log('getBeforePollingTableTags')
+        },
+        getAfterPollingTableTags: () => {
+            console.log('getAfterPollingTableTags')
         },
     })
 
@@ -239,6 +269,7 @@ client()
     .catch((err) => {
         console.log(err)
     })
+
 // getServerMethods {
 //   tabA: {
 //     select: [AsyncFunction: f],
@@ -254,26 +285,87 @@ client()
 //   },
 //   uploadFile: [AsyncFunction: f]
 // }
+// r.tabA.select then [
+//   { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+// ]
 // r.tabB.select then [
 //   { id: 'id-tabB-peter', name: 'peter', value: 123 },
 //   { id: 'id-tabB-rosemary', name: 'rosemary', value: 123.456 }
 // ]
-// r.tabA.select then [
-//   { id: 'id-tabA-peter', name: 'peter', value: {random value} },
-//   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
-//   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
-// ]
-// sync data {
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag kFv3W1
+// recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-01-28T09:54:05+08:00|29azjN',
+//   timeTag: 'kFv3W1',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: {random value}},
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
-//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
-// repeat...
-
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:39+08:00|Mkmsfo
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: '2022-03-02T17:05:39+08:00|Mkmsfo',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 0.2695575980174958 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:42+08:00|hqCtKH
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: '2022-03-02T17:05:42+08:00|hqCtKH',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 0.5347793912758274 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:45+08:00|FA4NPZ
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: '2022-03-02T17:05:45+08:00|FA4NPZ',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 0.5995958376378325 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:48+08:00|8Q88uv
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: '2022-03-02T17:05:48+08:00|8Q88uv',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 0.45049512863192986 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:51+08:00|1k3U1P
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: '2022-03-02T17:05:51+08:00|1k3U1P',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 0.07134333448641317 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
 ```
 
 ### In a browser(UMD module):
@@ -281,7 +373,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.1/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.2/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
@@ -343,7 +435,7 @@ async function client() {
 
         },
         recvData: (r) => {
-            console.log('sync data', r)
+            console.log('recvData', r)
             //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
         },
     })
@@ -363,8 +455,8 @@ client()
 // web.html:65 r.tabB.select then (2) [{…}, {…}]
 // web.html:77 uploadFile 100 386 upload
 // web.html:77 uploadFile 100 154 donwload
-// web.html:82 sync data {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-// web.html:82 sync data {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
+// web.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
+// web.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
 // repeat...
 
 ```

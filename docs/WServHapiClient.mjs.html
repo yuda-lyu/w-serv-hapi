@@ -121,8 +121,26 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *
  *         },
  *         recvData: (r) => {
- *             console.log('sync data', r)
+ *             console.log('recvData', r)
  *             //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
+ *         },
+ *         getRefreshState: (r) => {
+ *             console.log('getRefreshState', 'needToRefresh', r.needToRefresh)
+ *         },
+ *         getRefreshTable: (r) => {
+ *             console.log('getRefreshTable', 'tableName', r.tableName, 'timeTag', r.timeTag)
+ *         },
+ *         getBeforeUpdateTableTags: (r) => {
+ *             console.log('getBeforeUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
+ *         },
+ *         getAfterUpdateTableTags: (r) => {
+ *             console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
+ *         },
+ *         getBeforePollingTableTags: () => {
+ *             console.log('getBeforePollingTableTags')
+ *         },
+ *         getAfterPollingTableTags: () => {
+ *             console.log('getAfterPollingTableTags')
  *         },
  *     })
  *
@@ -132,6 +150,7 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *     .catch((err) => {
  *         console.log(err)
  *     })
+ *
  * // getServerMethods {
  * //   tabA: {
  * //     select: [AsyncFunction: f],
@@ -147,25 +166,87 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * //   },
  * //   uploadFile: [AsyncFunction: f]
  * // }
+ * // r.tabA.select then [
+ * //   { id: 'id-tabA-peter', name: 'peter', value: 123 },
+ * //   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+ * //   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * // ]
  * // r.tabB.select then [
  * //   { id: 'id-tabB-peter', name: 'peter', value: 123 },
  * //   { id: 'id-tabB-rosemary', name: 'rosemary', value: 123.456 }
  * // ]
- * // r.tabA.select then [
- * //   { id: 'id-tabA-peter', name: 'peter', value: {random value} },
- * //   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
- * //   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
- * // ]
- * // sync data {
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag kFv3W1
+ * // recvData {
  * //   tableName: 'tabA',
- * //   timeTag: '2022-01-28T09:54:05+08:00|29azjN',
+ * //   timeTag: 'kFv3W1',
  * //   data: [
- * //     { id: 'id-tabA-peter', name: 'peter', value: {random value}},
- * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
- * //     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 123 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
  * //   ]
  * // }
- * // repeat...
+ * // getAfterUpdateTableTags needToRefresh false
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag 2022-03-02T17:05:39+08:00|Mkmsfo
+ * // recvData {
+ * //   tableName: 'tabA',
+ * //   timeTag: '2022-03-02T17:05:39+08:00|Mkmsfo',
+ * //   data: [
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 0.2695575980174958 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //   ]
+ * // }
+ * // getAfterUpdateTableTags needToRefresh false
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag 2022-03-02T17:05:42+08:00|hqCtKH
+ * // recvData {
+ * //   tableName: 'tabA',
+ * //   timeTag: '2022-03-02T17:05:42+08:00|hqCtKH',
+ * //   data: [
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 0.5347793912758274 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //   ]
+ * // }
+ * // getAfterUpdateTableTags needToRefresh false
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag 2022-03-02T17:05:45+08:00|FA4NPZ
+ * // recvData {
+ * //   tableName: 'tabA',
+ * //   timeTag: '2022-03-02T17:05:45+08:00|FA4NPZ',
+ * //   data: [
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 0.5995958376378325 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //   ]
+ * // }
+ * // getAfterUpdateTableTags needToRefresh false
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag 2022-03-02T17:05:48+08:00|8Q88uv
+ * // recvData {
+ * //   tableName: 'tabA',
+ * //   timeTag: '2022-03-02T17:05:48+08:00|8Q88uv',
+ * //   data: [
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 0.45049512863192986 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //   ]
+ * // }
+ * // getAfterUpdateTableTags needToRefresh false
+ * // getBeforeUpdateTableTags needToRefresh true
+ * // getRefreshState needToRefresh true
+ * // getRefreshTable tableName tabA timeTag 2022-03-02T17:05:51+08:00|1k3U1P
+ * // recvData {
+ * //   tableName: 'tabA',
+ * //   timeTag: '2022-03-02T17:05:51+08:00|1k3U1P',
+ * //   data: [
+ * //     { id: 'id-tabA-peter', name: 'peter', value: 0.07134333448641317 },
+ * //     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+ * //   ]
+ * // }
+ * // getAfterUpdateTableTags needToRefresh false
  *
  */
 async function WServHapiClient(opt = {}) {
@@ -222,6 +303,14 @@ async function WServHapiClient(opt = {}) {
         recvData = () => { }
     }
 
+    //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags, getBeforePollingTableTags, getAfterPollingTableTags
+    let getRefreshState = get(opt, 'getRefreshState')
+    let getRefreshTable = get(opt, 'getRefreshTable')
+    let getBeforeUpdateTableTags = get(opt, 'getBeforeUpdateTableTags')
+    let getAfterUpdateTableTags = get(opt, 'getAfterUpdateTableTags')
+    let getBeforePollingTableTags = get(opt, 'getBeforePollingTableTags')
+    let getAfterPollingTableTags = get(opt, 'getAfterPollingTableTags')
+
     //showLog
     let showLog = get(opt, 'showLog')
     if (!isbol(showLog)) {
@@ -271,10 +360,16 @@ async function WServHapiClient(opt = {}) {
         // },
         cbGetServerMethods: getServerMethods,
         // cbRecvData: (r) => {
-        //     console.log('sync data', r.tableName, r.data)
+        //     console.log('recvData', r.tableName, r.data)
         //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
         // },
         cbRecvData: recvData,
+        cbGetRefreshState: getRefreshState,
+        cbGetRefreshTable: getRefreshTable,
+        cbBeforeUpdateTableTags: getBeforeUpdateTableTags,
+        cbAfterUpdateTableTags: getAfterUpdateTableTags,
+        cbBeforePollingTableTags: getBeforePollingTableTags,
+        cbAfterPollingTableTags: getAfterPollingTableTags,
     })
 
     //error
@@ -313,7 +408,7 @@ export default WServHapiClient
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.10</a> on Fri Jan 28 2022 15:01:13 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.10</a> on Wed Mar 02 2022 17:10:23 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

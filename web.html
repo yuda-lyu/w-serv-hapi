@@ -79,7 +79,7 @@
 
                     },
                     recvData: (r) => {
-                        console.log('sync data', r)
+                        console.log('recvData', r)
                         //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
                     },
                 })
@@ -99,8 +99,8 @@
             // web.html:65 r.tabB.select then (2) [{…}, {…}]
             // web.html:77 uploadFile 100 386 upload
             // web.html:77 uploadFile 100 154 donwload
-            // web.html:82 sync data {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-            // web.html:82 sync data {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
+            // web.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
+            // web.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
             // repeat...
 
         </script>

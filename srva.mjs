@@ -75,14 +75,19 @@ async function run() {
     ]
     await saveData('tabB', r)
 
-    setInterval(() => {
-        console.log('update tabA')
+    let n = 0
+    let tn = setInterval(() => {
+        n++
+        console.log('update tabA', n)
         r = {
             id: 'id-tabA-peter',
             name: 'peter',
             value: Math.random(),
         }
         saveData('tabA', r)
+        if (n >= 5) {
+            clearInterval(tn)
+        }
     }, 3000)
 
     let procCommon = async (userId, tableName, methodName, input) => {
@@ -130,17 +135,25 @@ run()
     .catch((err) => {
         console.log(err)
     })
+
 // save then tabA [
-//     { n: 1, nModified: 1, ok: 1 },
-//     { n: 1, nModified: 1, ok: 1 },
-//     { n: 1, nModified: 1, ok: 1 }
+//   { n: 1, nModified: 1, ok: 1 },
+//   { n: 1, nModified: 1, ok: 1 },
+//   { n: 1, nModified: 1, ok: 1 }
 // ]
 // save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://localhost:8080
+// Server running at: http://DESKTOP-5UNLNF8:8080
 // Server[port:8080]: open
-// update tabA
+// update tabA 1
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
-// repeat...
+// update tabA 2
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 3
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 4
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+// update tabA 5
+// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 
 
 //node --experimental-modules --es-module-specifier-resolution=node srva.mjs
