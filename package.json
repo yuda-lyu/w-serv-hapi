@@ -1,17 +1,17 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A wrapper hapi for data control and synchronization between nodejs and browser.",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
+    "w-converhp": "^1.0.35",
     "w-serv-webdata": "^1.0.22",
     "w-sync-webdata": "^1.0.13",
-    "wsemi": "^1.6.46"
+    "wsemi": "^1.6.47"
   },
   "devDependencies": {
-    "w-converhp": "^1.0.35",
     "w-orm-mongodb": "^1.1.25",
     "w-package-tools": "^1.0.61"
   },
