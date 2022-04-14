@@ -124,9 +124,9 @@ async function run() {
             // saveTableAndData,
             //...
         },
-
         hookBefores: null,
         hookAfters: null,
+        // fnTableTags: 'tableTags-serv-hapi.json',
     })
 
     return wshs

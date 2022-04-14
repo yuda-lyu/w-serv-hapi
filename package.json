@@ -1,15 +1,14 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.0.5",
-  "description": "A wrapper hapi for data control and synchronization between nodejs and browser.",
+  "version": "1.0.6",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
     "w-converhp": "^1.0.36",
-    "w-serv-webdata": "^1.0.24",
-    "w-sync-webdata": "^1.0.15",
-    "wsemi": "^1.6.54"
+    "w-serv-webdata": "^1.0.26",
+    "w-sync-webdata": "^1.0.17",
+    "wsemi": "^1.6.55"
   },
   "devDependencies": {
     "w-orm-mongodb": "^1.1.26",
@@ -34,9 +33,5 @@
     "browser"
   ],
   "author": "yuda-lyu(semisphere)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/yuda-lyu/w-serv-hapi/issues"
-  },
-  "homepage": "https://github.com/yuda-lyu/w-serv-hapi#readme"
+  "license": "MIT"
 }

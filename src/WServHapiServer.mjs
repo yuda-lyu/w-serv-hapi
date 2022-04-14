@@ -269,6 +269,9 @@ async function WServHapiServer(opt = {}) {
     //hookAfters
     let hookAfters = get(opt, 'hookAfters', null)
 
+    //fnTableTags
+    let fnTableTags = get(opt, 'fnTableTags', null)
+
     //showLog
     let showLog = get(opt, 'showLog')
     if (!isbol(showLog)) {
@@ -422,6 +425,8 @@ async function WServHapiServer(opt = {}) {
             hookBefores,
             // hookAfters: null,
             hookAfters,
+            // fnTableTags: 'tableTags.json',
+            fnTableTags,
         })
         wsds.on('error', (err) => {
             if (showLog) {
