@@ -32,6 +32,7 @@ import _ from 'lodash'
 import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
 import WServHapiServer from './src/WServHapiServer.mjs'
 
+
 async function run() {
 
     //optWOrm
@@ -133,7 +134,7 @@ async function run() {
     }
 
     //WServHapiServer
-    let wshs = WServHapiServer({
+    let instWServHapiServer = new WServHapiServer({
         port: 8080,
         apis: [],
         getUserIDFromToken: async (token) => { //可使用async或sync函數
@@ -152,17 +153,17 @@ async function run() {
             // saveTableAndData,
             //...
         },
-
         hookBefores: null,
         hookAfters: null,
+        // fnTableTags: 'tableTags-serv-hapi.json',
     })
 
-    return wshs
-}
-run()
-    .catch((err) => {
+    instWServHapiServer.on('error', (err) => {
         console.log(err)
     })
+
+}
+run()
 
 // save then tabA [
 //   { n: 1, nModified: 1, ok: 1 },
@@ -190,10 +191,11 @@ run()
 import FormData from 'form-data'
 import WServHapiClient from './src/WServHapiClient.mjs'
 
+
 async function client() {
 
     //WServHapiClient
-    let wshc = WServHapiClient({
+    let instWServHapiClient = new WServHapiClient({
         FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname
@@ -263,12 +265,12 @@ async function client() {
         },
     })
 
-    return wshc
-}
-client()
-    .catch((err) => {
+    instWServHapiClient.on('error', (err) => {
         console.log(err)
     })
+
+}
+client()
 
 // getServerMethods {
 //   tabA: {
