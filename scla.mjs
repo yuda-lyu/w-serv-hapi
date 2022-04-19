@@ -6,7 +6,7 @@ import WServHapiClient from './src/WServHapiClient.mjs'
 async function client() {
 
     //WServHapiClient
-    let wshc = WServHapiClient({
+    let wshc = new WServHapiClient({
         FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname

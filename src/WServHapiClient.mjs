@@ -5,6 +5,7 @@ import isbol from 'wsemi/src/isbol.mjs'
 import ispm from 'wsemi/src/ispm.mjs'
 import isWindow from 'wsemi/src/isWindow.mjs'
 import waitFun from 'wsemi/src/waitFun.mjs'
+import evem from 'wsemi/src/evem.mjs'
 import WConverhpClient from 'w-converhp/src/WConverhpClient.mjs'
 import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
 
@@ -205,147 +206,167 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * // getAfterUpdateTableTags needToRefresh false
  *
  */
-async function WServHapiClient(opt = {}) {
+function WServHapiClient(opt = {}) {
+    let instWConverhpClient = null
+    let instWServWebdataClient = null
 
-    //FormData
-    let FormData = get(opt, 'FormData')
-    // if (!isfun(FormData)) {
-    //     throw new Error(`invalid opt.FormData in nodejs`)
-    // }
+    //ev
+    let ev = evem()
 
-    //env
-    let env = isWindow() ? 'browser' : 'nodejs'
-    // console.log('env', env)
+    async function core() {
 
-    //check, 於瀏覽器端自動停用外部引入之FormData
-    if (env === 'browser') {
-        FormData = undefined
-    }
+        //FormData
+        let FormData = get(opt, 'FormData')
+        // if (!isfun(FormData)) {
+        //     throw new Error(`invalid opt.FormData in nodejs`)
+        // }
 
-    //getUrl
-    let getUrl = get(opt, 'getUrl')
-    if (!isfun(getUrl)) {
-        getUrl = () => {
-            return window.location.origin + window.location.pathname
+        //env
+        let env = isWindow() ? 'browser' : 'nodejs'
+        // console.log('env', env)
+
+        //check, 於瀏覽器端自動停用外部引入之FormData
+        if (env === 'browser') {
+            FormData = undefined
         }
-    }
 
-    //useWaitToken
-    let useWaitToken = get(opt, 'useWaitToken', null)
-    if (!isbol(useWaitToken)) {
-        useWaitToken = false
-    }
+        //getUrl
+        let getUrl = get(opt, 'getUrl')
+        if (!isfun(getUrl)) {
+            getUrl = () => {
+                return window.location.origin + window.location.pathname
+            }
+        }
 
-    //getToken
-    let getToken = get(opt, 'getToken')
-    if (!isfun(getToken)) {
+        //useWaitToken
+        let useWaitToken = get(opt, 'useWaitToken', null)
+        if (!isbol(useWaitToken)) {
+            useWaitToken = false
+        }
+
+        //getToken
+        let getToken = get(opt, 'getToken')
+        if (!isfun(getToken)) {
+            if (useWaitToken) {
+                throw new Error('invalid opt.getToken when opt.useWaitToken=true')
+            }
+            getToken = () => {
+                return ''
+            }
+        }
+
+        //getServerMethods
+        let getServerMethods = get(opt, 'getServerMethods')
+        if (!isfun(getServerMethods)) {
+            getServerMethods = () => { }
+        }
+
+        //recvData
+        let recvData = get(opt, 'recvData')
+        if (!isfun(recvData)) {
+            recvData = () => { }
+        }
+
+        //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags, getBeforePollingTableTags, getAfterPollingTableTags
+        let getRefreshState = get(opt, 'getRefreshState')
+        let getRefreshTable = get(opt, 'getRefreshTable')
+        let getBeforeUpdateTableTags = get(opt, 'getBeforeUpdateTableTags')
+        let getAfterUpdateTableTags = get(opt, 'getAfterUpdateTableTags')
+        let getBeforePollingTableTags = get(opt, 'getBeforePollingTableTags')
+        let getAfterPollingTableTags = get(opt, 'getAfterPollingTableTags')
+
+        //showLog
+        let showLog = get(opt, 'showLog')
+        if (!isbol(showLog)) {
+            showLog = true
+        }
+
+        //useWaitToken, 等待有效token
         if (useWaitToken) {
-            throw new Error('invalid opt.getToken when opt.useWaitToken=true')
-        }
-        getToken = () => {
-            return ''
-        }
-    }
-
-    //getServerMethods
-    let getServerMethods = get(opt, 'getServerMethods')
-    if (!isfun(getServerMethods)) {
-        getServerMethods = () => { }
-    }
-
-    //recvData
-    let recvData = get(opt, 'recvData')
-    if (!isfun(recvData)) {
-        recvData = () => { }
-    }
-
-    //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags, getBeforePollingTableTags, getAfterPollingTableTags
-    let getRefreshState = get(opt, 'getRefreshState')
-    let getRefreshTable = get(opt, 'getRefreshTable')
-    let getBeforeUpdateTableTags = get(opt, 'getBeforeUpdateTableTags')
-    let getAfterUpdateTableTags = get(opt, 'getAfterUpdateTableTags')
-    let getBeforePollingTableTags = get(opt, 'getBeforePollingTableTags')
-    let getAfterPollingTableTags = get(opt, 'getAfterPollingTableTags')
-
-    //showLog
-    let showLog = get(opt, 'showLog')
-    if (!isbol(showLog)) {
-        showLog = true
-    }
-
-    //useWaitToken, 等待有效token
-    if (useWaitToken) {
-        if (showLog) {
-            console.log('waiting token...')
-        }
-
-        //waitFun
-        await waitFun(async () => {
-
-            //getToken
-            let token = getToken()
-            if (ispm(token)) {
-                token = await token
+            if (showLog) {
+                console.log('waiting token...')
             }
 
-            return isestr(token)
-        }, { timeInterval: 100 })
+            //waitFun
+            await waitFun(async () => {
 
-        if (showLog) {
-            console.log('get token')
+                //getToken
+                let token = getToken()
+                if (ispm(token)) {
+                    token = await token
+                }
+
+                return isestr(token)
+            }, { timeInterval: 100 })
+
+            if (showLog) {
+                console.log('get token')
+            }
         }
+
+        //WConverhpClient
+        instWConverhpClient = new WConverhpClient({
+            FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
+            url: getUrl(),
+        })
+
+        //WServWebdataClient
+        instWServWebdataClient = new WServWebdataClient({
+            instWConverClient: instWConverhpClient,
+            // cbGetToken: () => {
+            //     return Vue.prototype.$store.state.userToken
+            // },
+            cbGetToken: getToken,
+            // cbGetServerMethods: (r) => {
+            //     console.log('$fapi', r)
+            //     Vue.prototype.$fapi = r
+            //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
+            // },
+            cbGetServerMethods: getServerMethods,
+            // cbRecvData: (r) => {
+            //     console.log('recvData', r.tableName, r.data)
+            //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
+            // },
+            cbRecvData: recvData,
+            cbGetRefreshState: getRefreshState,
+            cbGetRefreshTable: getRefreshTable,
+            cbBeforeUpdateTableTags: getBeforeUpdateTableTags,
+            cbAfterUpdateTableTags: getAfterUpdateTableTags,
+            cbBeforePollingTableTags: getBeforePollingTableTags,
+            cbAfterPollingTableTags: getAfterPollingTableTags,
+        })
+
+        //error
+        instWConverhpClient.on('error', (err) => {
+            if (showLog) {
+                console.log('instWConverhpClient error', err)
+            }
+        })
+
+        //error
+        instWServWebdataClient.on('error', (err) => {
+            if (showLog) {
+                console.log('instWServWebdataClient error', err)
+            }
+        })
+
     }
 
-    //WConverhpClient
-    let wcc = new WConverhpClient({
-        FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
-        url: getUrl(),
-    })
+    //core
+    core()
+        .catch((err) => {
+            ev.emit('error', err)
+        })
 
-    //wsdc
-    let wsdc = WServWebdataClient({
-        instWConverClient: wcc,
-        // cbGetToken: () => {
-        //     return Vue.prototype.$store.state.userToken
-        // },
-        cbGetToken: getToken,
-        // cbGetServerMethods: (r) => {
-        //     console.log('$fapi', r)
-        //     Vue.prototype.$fapi = r
-        //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
-        // },
-        cbGetServerMethods: getServerMethods,
-        // cbRecvData: (r) => {
-        //     console.log('recvData', r.tableName, r.data)
-        //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
-        // },
-        cbRecvData: recvData,
-        cbGetRefreshState: getRefreshState,
-        cbGetRefreshTable: getRefreshTable,
-        cbBeforeUpdateTableTags: getBeforeUpdateTableTags,
-        cbAfterUpdateTableTags: getAfterUpdateTableTags,
-        cbBeforePollingTableTags: getBeforePollingTableTags,
-        cbAfterPollingTableTags: getAfterPollingTableTags,
-    })
-
-    //error
-    wcc.on('error', (err) => {
-        if (showLog) {
-            console.log('wcc error', err)
-        }
-    })
-
-    //error
-    wsdc.on('error', (err) => {
-        if (showLog) {
-            console.log('wsdc error', err)
-        }
-    })
-
-    return {
-        wcc,
-        wsdc,
+    //save
+    ev.getInstWConverhpClient = () => {
+        return instWConverhpClient
     }
+    ev.getInstWServWebdataClient = () => {
+        return instWServWebdataClient
+    }
+
+    return ev
 }
 
 
