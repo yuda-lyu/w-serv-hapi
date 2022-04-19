@@ -387,7 +387,7 @@ async function client() {
 
     //WServHapiClient
     let WServHapiClient = window['w-serv-hapi-client']
-    let wshc = WServHapiClient({
+    let wshc = new WServHapiClient({
         // FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname
