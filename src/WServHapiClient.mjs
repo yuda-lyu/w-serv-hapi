@@ -28,10 +28,11 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * import FormData from 'form-data'
  * import WServHapiClient from './src/WServHapiClient.mjs'
  *
+ *
  * async function client() {
  *
  *     //WServHapiClient
- *     let wshc = WServHapiClient({
+ *     let instWServHapiClient = new WServHapiClient({
  *         FormData,
  *         getUrl: () => {
  *             //return window.location.origin + window.location.pathname
@@ -101,12 +102,12 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *         },
  *     })
  *
- *     return wshc
- * }
- * client()
- *     .catch((err) => {
+ *     instWServHapiClient.on('error', (err) => {
  *         console.log(err)
  *     })
+ *
+ * }
+ * client()
  *
  * // getServerMethods {
  * //   tabA: {

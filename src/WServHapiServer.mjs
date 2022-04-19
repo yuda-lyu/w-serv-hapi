@@ -39,6 +39,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
  * import WServHapiServer from './src/WServHapiServer.mjs'
  *
+ *
  * async function run() {
  *
  *     //optWOrm
@@ -110,14 +111,19 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     ]
  *     await saveData('tabB', r)
  *
- *     setInterval(() => {
- *         console.log('update tabA')
+ *     let n = 0
+ *     let tn = setInterval(() => {
+ *         n++
+ *         console.log('update tabA', n)
  *         r = {
  *             id: 'id-tabA-peter',
  *             name: 'peter',
  *             value: Math.random(),
  *         }
  *         saveData('tabA', r)
+ *         if (n >= 5) {
+ *             clearInterval(tn)
+ *         }
  *     }, 3000)
  *
  *     let procCommon = async (userId, tableName, methodName, input) => {
@@ -135,7 +141,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     }
  *
  *     //WServHapiServer
- *     let wshs = WServHapiServer({
+ *     let instWServHapiServer = new WServHapiServer({
  *         port: 8080,
  *         apis: [],
  *         getUserIDFromToken: async (token) => { //可使用async或sync函數
@@ -154,17 +160,18 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *             // saveTableAndData,
  *             //...
  *         },
- *
  *         hookBefores: null,
  *         hookAfters: null,
+ *         // fnTableTags: 'tableTags-serv-hapi.json',
  *     })
  *
- *     return wshs
- * }
- * run()
- *     .catch((err) => {
+ *     instWServHapiServer.on('error', (err) => {
  *         console.log(err)
  *     })
+ *
+ * }
+ * run()
+ *
  * // save then tabA [
  * //     { n: 1, nModified: 1, ok: 1 },
  * //     { n: 1, nModified: 1, ok: 1 },
