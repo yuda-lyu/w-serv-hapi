@@ -5,6 +5,7 @@ import isearr from 'wsemi/src/isearr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
 import isestr from 'wsemi/src/isestr.mjs'
+import evem from 'wsemi/src/evem.mjs'
 import WConverhpServer from 'w-converhp/src/WConverhpServer.mjs'
 import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
 
@@ -177,10 +178,13 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * // repeat...
  *
  */
-async function WServHapiServer(opt = {}) {
+function WServHapiServer(opt = {}) {
     let server = null
     let instWConverhpServer = null
     let instWServWebdataServer = null
+
+    //ev
+    let ev = evem()
 
     //port
     let port = get(opt, 'port')
@@ -363,6 +367,10 @@ async function WServHapiServer(opt = {}) {
             if (showLog) {
                 console.log(`Server[port:${port}]: error`, err)
             }
+            ev.emit('error', {
+                mode: 'instWConverhpServer error',
+                err
+            })
         })
         // instWConverhpServer.on('clientEnter', function(clientId, data) {
         //     console.log(`Server[port:${port}]: client enter: ${clientId}`)
@@ -398,7 +406,7 @@ async function WServHapiServer(opt = {}) {
         // })
 
         //WServWebdataServer
-        instWServWebdataServer = WServWebdataServer({
+        instWServWebdataServer = new WServWebdataServer({
             instWConverServer: instWConverhpServer,
             // cbGetUserIDFromToken: (token) => {
             //     return 'id-for-admin'
@@ -432,6 +440,10 @@ async function WServHapiServer(opt = {}) {
             if (showLog) {
                 console.log('error', err)
             }
+            ev.emit('error', {
+                mode: 'instWServWebdataServer error',
+                err
+            })
         })
 
     }
@@ -460,20 +472,31 @@ async function WServHapiServer(opt = {}) {
     //攔截非預期錯誤
     process.on('unhandledRejection', (err) => {
         console.log('unhandledRejection', err) //強制顯示
-        // if (showLog) {
-        // }
+        ev.emit('error', {
+            mode: 'unhandledRejection',
+            err
+        })
     })
     process.on('uncaughtException', (err) => {
         console.log('uncaughtException', err) //強制顯示
-        // if (showLog) {
-        // }
+        ev.emit('error', {
+            mode: 'uncaughtException',
+            err
+        })
     })
 
-    return {
-        server,
-        instWConverhpServer,
-        instWServWebdataServer,
+    //save
+    ev.getServer = () => {
+        return server
     }
+    ev.getInstWConverhpServer = () => {
+        return instWConverhpServer
+    }
+    ev.getInstWServWebdataServer = () => {
+        return instWServWebdataServer
+    }
+
+    return ev
 }
 
 

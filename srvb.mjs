@@ -11,7 +11,7 @@ async function run() {
     }
 
     //WServHapiServer
-    let wshs = WServHapiServer({
+    let instWServHapiServer = new WServHapiServer({
         port: 8080,
         apis: [],
         getUserIDFromToken: async (token) => { //可使用async或sync函數
@@ -32,7 +32,7 @@ async function run() {
         hookAfters: null,
     })
 
-    return wshs
+    return instWServHapiServer
 }
 run()
     .catch((err) => {
