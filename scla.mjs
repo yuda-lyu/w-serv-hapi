@@ -6,7 +6,7 @@ import WServHapiClient from './src/WServHapiClient.mjs'
 async function client() {
 
     //WServHapiClient
-    let wshc = new WServHapiClient({
+    let instWServHapiClient = new WServHapiClient({
         FormData,
         getUrl: () => {
             //return window.location.origin + window.location.pathname
@@ -76,12 +76,12 @@ async function client() {
         },
     })
 
-    return wshc
-}
-client()
-    .catch((err) => {
+    instWServHapiClient.on('error', (err) => {
         console.log(err)
     })
+
+}
+client()
 
 // getServerMethods {
 //   tabA: {

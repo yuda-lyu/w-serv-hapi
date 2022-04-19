@@ -32,12 +32,12 @@ async function run() {
         hookAfters: null,
     })
 
-    return instWServHapiServer
-}
-run()
-    .catch((err) => {
+    instWServHapiServer.on('error', (err) => {
         console.log(err)
     })
+
+}
+run()
 
 // save then tabA [
 //     { n: 1, nModified: 1, ok: 1 },
