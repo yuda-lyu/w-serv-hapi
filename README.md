@@ -18,7 +18,7 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 
 ## Installation
 ### Using npm(ES6 module):
-> **Note:** `w-serv-hapi-server` and `w-serv-hapi-client` is mainly dependent on `lodash`, `w-serv-webdata`, `w-sync-webdata`, `w-converhp` and `wsemi`.
+> **Note:** `w-serv-hapi-server` and `w-serv-hapi-client` is mainly dependent on `lodash`, `w-serv-webdata`,`w-converhp` and `wsemi`.
 
 ```alias
 npm i w-serv-hapi
@@ -373,7 +373,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.6/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.7/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:

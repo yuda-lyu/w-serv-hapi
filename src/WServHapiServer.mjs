@@ -179,8 +179,8 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  */
 async function WServHapiServer(opt = {}) {
     let server = null
-    let wsrv = null
-    let wsds = null
+    let instWConverhpServer = null
+    let instWServWebdataServer = null
 
     //port
     let port = get(opt, 'port')
@@ -337,10 +337,10 @@ async function WServHapiServer(opt = {}) {
     let createWConverhpServer = async () => {
 
         //WConverhpServer
-        wsrv = new WConverhpServer({
+        instWConverhpServer = new WConverhpServer({
             serverHapi: server,
         })
-        wsrv.on('open', function() {
+        instWConverhpServer.on('open', function() {
             if (showLog) {
                 console.log(`Server[port:${port}]: open`)
             }
@@ -353,36 +353,36 @@ async function WServHapiServer(opt = {}) {
             //         text: `server broadcast hi(${n})`,
             //         data: new Uint8Array([66, 97, 115]), //support Uint8Array data
             //     }
-            //     wsrv.broadcast(o, function (prog) {
+            //     instWConverhpServer.broadcast(o, function (prog) {
             //         console.log('broadcast prog', prog)
             //     })
             // }, 1000)
 
         })
-        wsrv.on('error', function(err) {
+        instWConverhpServer.on('error', function(err) {
             if (showLog) {
                 console.log(`Server[port:${port}]: error`, err)
             }
         })
-        // wsrv.on('clientEnter', function(clientId, data) {
+        // instWConverhpServer.on('clientEnter', function(clientId, data) {
         //     console.log(`Server[port:${port}]: client enter: ${clientId}`)
         // })
-        wsrv.on('clientChange', function(num) {
+        instWConverhpServer.on('clientChange', function(num) {
             if (showLog) {
                 console.log(`Server[port:${port}]: now clients: ${num}`)
             }
         })
-        // wsrv.on('execute', async function(func, input, pm) {
+        // instWConverhpServer.on('execute', async function(func, input, pm) {
         //     //console.log(`Server[port:${port}]: execute`, func, input)
 
         //     //execute
         //     execute({ func, input, pm })
 
         // })
-        // wsrv.on('broadcast', function(data) {
+        // instWConverhpServer.on('broadcast', function(data) {
         //     console.log(`Server[port:${port}]: broadcast`, data)
         // })
-        // wsrv.on('deliver', function(data) {
+        // instWConverhpServer.on('deliver', function(data) {
         //     console.log(`Server[port:${port}]: deliver`, data)
         // })
 
@@ -398,8 +398,8 @@ async function WServHapiServer(opt = {}) {
         // })
 
         //WServWebdataServer
-        wsds = WServWebdataServer({
-            instWConverServer: wsrv,
+        instWServWebdataServer = WServWebdataServer({
+            instWConverServer: instWConverhpServer,
             // cbGetUserIDFromToken: (token) => {
             //     return 'id-for-admin'
             // },
@@ -428,7 +428,7 @@ async function WServHapiServer(opt = {}) {
             // fnTableTags: 'tableTags.json',
             fnTableTags,
         })
-        wsds.on('error', (err) => {
+        instWServWebdataServer.on('error', (err) => {
             if (showLog) {
                 console.log('error', err)
             }
@@ -471,8 +471,8 @@ async function WServHapiServer(opt = {}) {
 
     return {
         server,
-        wsrv,
-        wsds,
+        instWConverhpServer,
+        instWServWebdataServer,
     }
 }
 
