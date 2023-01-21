@@ -27,7 +27,6 @@ async function run() {
             execFunA,
             //...
         },
-
         hookBefores: null,
         hookAfters: null,
     })
