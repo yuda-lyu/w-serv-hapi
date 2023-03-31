@@ -37,7 +37,7 @@ async function run() {
 
     //optWOrm
     let optWOrm = {
-        url: 'mongodb://username:password@localhost:27017',
+        url: 'mongodb://username:password@127.0.0.1:27017',
         db: 'servhapi',
         cl: '',
     }
@@ -375,11 +375,11 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.10/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.11/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
-> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/web.html)]
+> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/weba.html)]
 ```alias
 let $fapi = null
 
@@ -449,16 +449,16 @@ client()
         console.log(err)
     })
 // getServerMethods {tabA: {…}, tabB: {…}, uploadFile: ƒ}
-// web.html:51 select tabA 100 339 upload
-// web.html:51 select tabA 100 310 donwload
-// web.html:54 r.tabA.select then (3) [{…}, {…}, {…}]
-// web.html:62 select tabB 100 339 upload
-// web.html:62 select tabB 100 258 donwload
-// web.html:65 r.tabB.select then (2) [{…}, {…}]
-// web.html:77 uploadFile 100 386 upload
-// web.html:77 uploadFile 100 154 donwload
-// web.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-// web.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
+// weba.html:51 select tabA 100 339 upload
+// weba.html:51 select tabA 100 310 donwload
+// weba.html:54 r.tabA.select then (3) [{…}, {…}, {…}]
+// weba.html:62 select tabB 100 339 upload
+// weba.html:62 select tabB 100 258 donwload
+// weba.html:65 r.tabB.select then (2) [{…}, {…}]
+// weba.html:77 uploadFile 100 386 upload
+// weba.html:77 uploadFile 100 154 donwload
+// weba.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
+// weba.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
 // repeat...
 
 ```
