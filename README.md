@@ -6,6 +6,7 @@ A wrapper hapi for data control and synchronization between nodejs and browser.
 [![license](https://img.shields.io/npm/l/w-serv-hapi.svg?style=flat)](https://npmjs.org/package/w-serv-hapi) 
 [![gzip file size](http://img.badgesize.io/yuda-lyu/w-serv-hapi/master/dist/w-serv-hapi-server.umd.js.svg?compression=gzip)](https://github.com/yuda-lyu/w-serv-hapi)
 [![npm download](https://img.shields.io/npm/dt/w-serv-hapi.svg)](https://npmjs.org/package/w-serv-hapi) 
+[![npm download](https://img.shields.io/npm/dm/w-serv-hapi.svg)](https://npmjs.org/package/w-serv-hapi) 
 [![jsdelivr download](https://img.shields.io/jsdelivr/npm/hm/w-serv-hapi.svg)](https://www.jsdelivr.com/package/npm/w-serv-hapi)
 
 ## Documentation
@@ -18,7 +19,7 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 
 ## Installation
 ### Using npm(ES6 module):
-> **Note:** `w-serv-hapi-server` and `w-serv-hapi-client` is mainly dependent on `lodash`, `w-serv-webdata`,`w-converhp` and `wsemi`.
+> **Note:** `w-serv-hapi-server` and `w-serv-hapi-client` is mainly dependent on `lodash-es`, `w-serv-webdata`,`w-converhp` and `wsemi`.
 
 ```alias
 npm i w-serv-hapi
@@ -28,7 +29,7 @@ npm i w-serv-hapi
 > **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/srva.mjs)]
 ```alias
 import fs from 'fs'
-import _ from 'lodash'
+import _ from 'lodash-es'
 import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
 import WServHapiServer from './src/WServHapiServer.mjs'
 
@@ -375,7 +376,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.11/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.12/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:

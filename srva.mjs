@@ -1,5 +1,5 @@
 import fs from 'fs'
-import _ from 'lodash'
+import _ from 'lodash-es'
 import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
 import WServHapiServer from './src/WServHapiServer.mjs'
 

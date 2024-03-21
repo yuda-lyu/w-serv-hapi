@@ -1,6 +1,6 @@
 import Hapi from '@hapi/hapi'
 import Inert from '@hapi/inert'
-import get from 'lodash/get'
+import get from 'lodash-es/get'
 import isearr from 'wsemi/src/isearr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
@@ -35,7 +35,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @example
  *
  * import fs from 'fs'
- * import _ from 'lodash'
+ * import _ from 'lodash-es'
  * import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
  * import WServHapiServer from './src/WServHapiServer.mjs'
  *
