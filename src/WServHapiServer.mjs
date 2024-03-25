@@ -1,6 +1,6 @@
 import Hapi from '@hapi/hapi'
 import Inert from '@hapi/inert'
-import get from 'lodash-es/get'
+import get from 'lodash-es/get.js'
 import isearr from 'wsemi/src/isearr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
