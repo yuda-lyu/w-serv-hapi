@@ -63,20 +63,18 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @class
  * @param {Object} [opt={}] 輸入設定物件，預設{}
  * @param {Integer} [opt.port=8080] 輸入Hapi伺服器通訊port，預設8080
- * @param {Boolean} [opt.useCors=true] 輸入是否API可跨域呼叫，預設true
+ * @param {Array} [opt.corsOrigins=['http://localhost']] 輸入允許跨域呼叫之網域陣列，給予['*']代表允許外部任意網域跨域，預設['http://localhost']
  * @param {Boolean} [opt.useInert=true] 輸入是否使用@hapi/inert取得指定資料夾下所有靜態檔案，預設true
  * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
  * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
  * @param {Function} [opt.getUserIDFromToken=async ()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async ()=>''
- * @param {Boolean} [opt.useDbORM=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
- * @param {Object} [opt.dbORMs={}] 輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}
- * @param {Function} [opt.operORM={}] 輸入各資料表的操作通用接口物件，用以提供操作由tableNamesExec指定資料表的例如'select'、'insert'、'save'、'del'函數。加上由extFuncs提供的函數，就為全部可由前端執行的函數，預設{}
+ * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
+ * @param {Object} [opt.kpOrm={}] 輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}
+ * @param {Function} [opt.operOrm={}] 輸入各資料表的操作通用接口物件，用以提供操作由tableNamesExec指定資料表的例如'select'、'insert'、'save'、'del'函數。加上由extFuncs提供的函數，就為全部可由前端執行的函數，預設{}
  * @param {Array} [opt.tableNamesExec=[]] 輸入指定能被操作的表名陣列，預設[]
  * @param {Array} [opt.methodsExec=['select','insert','save','del']] 輸入指定綁定操作器的方式陣列，可選'select'、'insert'、'save'、'del'、'delAll'，預設['select', 'insert', 'save', 'del']
  * @param {Array} [opt.tableNamesSync=[]] 輸入指定能被同步的表名陣列，預設[]
- * @param {Object} [opt.extFuncs=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
- * @param {Function} [opt.hookBefores=null] 輸入執行函數的前攔截函數，預設null
- * @param {Function} [opt.hookAfters=null] 輸入執行函數的後攔截函數，預設null
+ * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
  * @returns {Object} 回傳物件，其內server為hapi伺服器實體，wsrv為w-converhp的伺服器事件物件，wsds為w-serv-webdata的伺服器事件物件，可監聽error事件
  * @example
@@ -100,19 +98,19 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     let tableNamesExec = ['tabA', 'tabB']
  *     let tableNamesSync = ['tabA']
  *
- *     //woItems
- *     let woItems = {}
+ *     //kpOrm
+ *     let kpOrm = {}
  *     for (let k in tableNamesExec) {
  *         let v = tableNamesExec[k]
  *         let opt = { ...optWOrm, cl: v }
  *         let wo = new WOrm(opt)
- *         woItems[v] = wo
+ *         kpOrm[v] = wo
  *     }
  *
  *     async function saveData(cl, r) {
  *
  *         //w
- *         let w = woItems[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
+ *         let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
  *
  *         //save
  *         await w.save(r, { atomic: true }) //autoInsert: false
@@ -175,7 +173,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *
  *     let procCommon = async (userId, tableName, methodName, input) => {
  *         // console.log('procCommon call', tableName, methodName, input)
- *         let r = await woItems[tableName][methodName](input)
+ *         let r = await kpOrm[tableName][methodName](input)
  *         // console.log('procCommon result', r)
  *         return r
  *     }
@@ -194,21 +192,19 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *         getUserIDFromToken: async (token) => { //可使用async或sync函數
  *             return 'id-for-admin'
  *         },
- *         useDbORM: true,
- *         dbORMs: woItems,
- *         operORM: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
+ *         useDbOrm: true,
+ *         kpOrm,
+ *         operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
  *         tableNamesExec,
  *         methodsExec: ['select', 'insert', 'save', 'del'],
  *         tableNamesSync,
- *         extFuncs: { //接收參數第1個為userId, 之後才是前端給予參數
+ *         kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
  *             uploadFile,
  *             // getUserFromID,
  *             // downloadFileFromID,
  *             // saveTableAndData,
  *             //...
  *         },
- *         hookBefores: null,
- *         hookAfters: null,
  *         // fnTableTags: 'tableTags-serv-hapi.json',
  *     })
  *
@@ -233,12 +229,9 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *
  */
 function WServHapiServer(opt = {}) {
-    let server = null
-    let instWConverhpServer = null
-    let instWServWebdataServer = null
-
-    //ev
     let ev = evem()
+    let server = null
+    let instWConverServer = null
 
     //port
     let port = get(opt, 'port')
@@ -246,10 +239,10 @@ function WServHapiServer(opt = {}) {
         port = 8080
     }
 
-    //useCors
-    let useCors = get(opt, 'useCors')
-    if (!isbol(useCors)) {
-        useCors = true
+    //corsOrigins
+    let corsOrigins = get(opt, 'corsOrigins', [])
+    if (!isearr(corsOrigins)) {
+        corsOrigins = ['http://localhost'] //['*']
     }
 
     //useInert
@@ -278,23 +271,23 @@ function WServHapiServer(opt = {}) {
     //     }
     // }
 
-    //useDbORM
-    let useDbORM = get(opt, 'useDbORM', null)
-    if (!isbol(useDbORM)) {
-        useDbORM = true
+    //useDbOrm
+    let useDbOrm = get(opt, 'useDbOrm', null)
+    if (!isbol(useDbOrm)) {
+        useDbOrm = true
     }
 
-    //dbORMs, 輸入外部ORM實體, 常用變數名: woItems
-    let dbORMs = get(opt, 'dbORMs', null)
-    // if (!isobj(dbORMs)) {
-    //     ev.emit('error', 'invalid opt.dbORMs')
+    //kpOrm, 輸入外部ORM實體, 常用變數名: kpOrm
+    let kpOrm = get(opt, 'kpOrm', null)
+    // if (!isobj(kpOrm)) {
+    //     ev.emit('error', 'invalid opt.kpOrm')
     //     return ev
     // }
 
-    //operORM, ORM的泛用接口, 常用變數名: procCommon
-    let operORM = get(opt, 'operORM', null)
-    // if (!isfun(operORM)) {
-    //     ev.emit('error', 'invalid opt.operORM')
+    //operOrm, ORM的泛用接口, 常用變數名: procCommon
+    let operOrm = get(opt, 'operOrm', null)
+    // if (!isfun(operOrm)) {
+    //     ev.emit('error', 'invalid opt.operOrm')
     //     return ev
     // }
 
@@ -318,14 +311,8 @@ function WServHapiServer(opt = {}) {
     //     return ev
     // }
 
-    //extFuncs
-    let extFuncs = get(opt, 'extFuncs', null)
-
-    //hookBefores
-    let hookBefores = get(opt, 'hookBefores', null)
-
-    //hookAfters
-    let hookAfters = get(opt, 'hookAfters', null)
+    //kpFunExt
+    let kpFunExt = get(opt, 'kpFunExt', null)
 
     //fnTableTags
     let fnTableTags = get(opt, 'fnTableTags', null)
@@ -343,7 +330,11 @@ function WServHapiServer(opt = {}) {
         server = new Hapi.Server({
             port,
             routes: {
-                cors: useCors
+                // cors: useCors
+                cors: {
+                    origin: corsOrigins, //Access-Control-Allow-Origin
+                    credentials: false, //Access-Control-Allow-Credentials
+                },
             },
         })
 
@@ -395,10 +386,10 @@ function WServHapiServer(opt = {}) {
     let createWConverhpServer = async () => {
 
         //WConverhpServer
-        instWConverhpServer = new WConverhpServer({
+        instWConverServer = new WConverhpServer({
             serverHapi: server,
         })
-        instWConverhpServer.on('open', function() {
+        instWConverServer.on('open', function() {
             if (showLog) {
                 console.log(`Server[port:${port}]: open`)
             }
@@ -411,41 +402,26 @@ function WServHapiServer(opt = {}) {
             //         text: `server broadcast hi(${n})`,
             //         data: new Uint8Array([66, 97, 115]), //support Uint8Array data
             //     }
-            //     instWConverhpServer.broadcast(o, function (prog) {
+            //     instWConverServer.broadcast(o, function (prog) {
             //         console.log('broadcast prog', prog)
             //     })
             // }, 1000)
 
         })
-        instWConverhpServer.on('error', function(err) {
-            if (showLog) {
-                console.log(`Server[port:${port}]: error`, err)
-            }
-            ev.emit('error', {
-                mode: 'instWConverhpServer error',
-                err
-            })
-        })
-        // instWConverhpServer.on('clientEnter', function(clientId, data) {
+        // instWConverServer.on('clientEnter', function(clientId, data) {
         //     console.log(`Server[port:${port}]: client enter: ${clientId}`)
         // })
-        instWConverhpServer.on('clientChange', function(num) {
+        instWConverServer.on('clientChange', function(num) {
             if (showLog) {
                 console.log(`Server[port:${port}]: now clients: ${num}`)
             }
         })
-        // instWConverhpServer.on('execute', async function(func, input, pm) {
+        // instWConverServer.on('execute', async function(func, input, pm) {
         //     //console.log(`Server[port:${port}]: execute`, func, input)
-
-        //     //execute
         //     execute({ func, input, pm })
-
         // })
-        // instWConverhpServer.on('broadcast', function(data) {
+        // instWConverServer.on('broadcast', function(data) {
         //     console.log(`Server[port:${port}]: broadcast`, data)
-        // })
-        // instWConverhpServer.on('deliver', function(data) {
-        //     console.log(`Server[port:${port}]: deliver`, data)
         // })
 
     }
@@ -460,44 +436,44 @@ function WServHapiServer(opt = {}) {
         // })
 
         //WServWebdataServer
-        instWServWebdataServer = new WServWebdataServer({
-            instWConverServer: instWConverhpServer,
-            // cbGetUserIDFromToken: (token) => {
-            //     return 'id-for-admin'
-            // },
-            cbGetUserIDFromToken: getUserIDFromToken,
-            // useDbORM: true,
-            useDbORM,
-            // dbORMs: woItems,
-            dbORMs,
-            // operORM: procCommon, //funORMProc的輸入為: userId, tableName, methodName, input
-            operORM, //funORMProc的輸入為: userId, tableName, methodName, input
-            // tableNamesExec,
-            tableNamesExec,
-            // tableNamesSync,
-            tableNamesSync,
-            // methodsExec: ['select', 'insert', 'save', 'del', 'mix'], //mix需於procCommon內註冊以提供
-            methodsExec, //methodsExec可提供select, insert, save, del, mix, mix需於procCommon內註冊以提供
-            // extFuncs: {
-            //     getUserById,
-            //     // downloadAnalysisResultByKey,
-            // },
-            extFuncs, //註冊擴充函數
-            // hookBefores: null,
-            hookBefores,
-            // hookAfters: null,
-            hookAfters,
-            // fnTableTags: 'tableTags.json',
-            fnTableTags,
-        })
-        instWServWebdataServer.on('error', (err) => {
-            if (showLog) {
-                console.log('error', err)
-            }
-            ev.emit('error', {
-                mode: 'instWServWebdataServer error',
-                err
+        instWConverServer = new WServWebdataServer(
+            instWConverServer,
+            {
+
+                // getUserIdByToken: (token) => {
+                //     return 'id-for-admin'
+                // },
+                getUserIdByToken: getUserIDFromToken,
+
+                // useDbOrm: true,
+                useDbOrm,
+
+                // kpOrm,
+                kpOrm,
+
+                // operOrm: procCommon, //funORMProc的輸入為: userId, tableName, methodName, input
+                operOrm, //funORMProc的輸入為: userId, tableName, methodName, input
+
+                tableNamesExec,
+                tableNamesSync,
+
+                // methodsExec: ['select', 'insert', 'save', 'del', 'mix'], //mix需於procCommon內註冊以提供
+                methodsExec, //methodsExec可提供select, insert, save, del, mix, mix需於procCommon內註冊以提供
+
+                // kpFunExt: {
+                //     getUserById,
+                //     // downloadAnalysisResultByKey,
+                // },
+                kpFunExt, //註冊擴充函數
+
+                // fnTableTags: 'tableTags.json',
+                fnTableTags,
+
             })
+
+        //共用instWConverServer, 故最後再監聽error與用ev.emit至外部
+        instWConverServer.on('error', (err) => {
+            ev.emit('error', err)
         })
 
     }
@@ -522,33 +498,19 @@ function WServHapiServer(opt = {}) {
 
     }
     create()
+        .catch((err) => {
+            ev.emit('error', err) //用ev.emit至外部
+        })
 
     //攔截非預期錯誤
     process.on('unhandledRejection', (err) => {
         console.log('unhandledRejection', err) //強制顯示
-        ev.emit('error', {
-            mode: 'unhandledRejection',
-            err
-        })
+        ev.emit('error', { mode: 'unhandledRejection', err }) //用ev.emit至外部
     })
     process.on('uncaughtException', (err) => {
         console.log('uncaughtException', err) //強制顯示
-        ev.emit('error', {
-            mode: 'uncaughtException',
-            err
-        })
+        ev.emit('error', { mode: 'uncaughtException', err }) //用ev.emit至外部
     })
-
-    //save
-    ev.getServer = () => {
-        return server
-    }
-    ev.getInstWConverhpServer = () => {
-        return instWConverhpServer
-    }
-    ev.getInstWServWebdataServer = () => {
-        return instWServWebdataServer
-    }
 
     return ev
 }
@@ -569,7 +531,7 @@ export default WServHapiServer
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.2</a> on Mon Mar 25 2024 22:40:13 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.2</a> on Sat Mar 29 2025 23:37:06 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
