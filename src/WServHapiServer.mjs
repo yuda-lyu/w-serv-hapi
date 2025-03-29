@@ -20,7 +20,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Boolean} [opt.useInert=true] 輸入是否使用@hapi/inert取得指定資料夾下所有靜態檔案，預設true
  * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
  * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
- * @param {Function} [opt.getUserIDFromToken=async ()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async ()=>''
+ * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=>''
  * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
  * @param {Object} [opt.kpOrm={}] 輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}
  * @param {Function} [opt.operOrm={}] 輸入各資料表的操作通用接口物件，用以提供操作由tableNamesExec指定資料表的例如'select'、'insert'、'save'、'del'函數。加上由extFuncs提供的函數，就為全部可由前端執行的函數，預設{}
@@ -142,7 +142,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     let instWServHapiServer = new WServHapiServer({
  *         port: 8080,
  *         apis: [],
- *         getUserIDFromToken: async (token) => { //可使用async或sync函數
+ *         getUserIdByToken: async (token) => { //可使用async或sync函數
  *             return 'id-for-admin'
  *         },
  *         useDbOrm: true,
@@ -216,10 +216,10 @@ function WServHapiServer(opt = {}) {
         apis = []
     }
 
-    //getUserIDFromToken
-    let getUserIDFromToken = get(opt, 'getUserIDFromToken', null)
-    // if (!isfun(getUserIDFromToken)) {
-    //     getUserIDFromToken = async () => {
+    //getUserIdByToken
+    let getUserIdByToken = get(opt, 'getUserIdByToken', null)
+    // if (!isfun(getUserIdByToken)) {
+    //     getUserIdByToken = async () => {
     //         return ''
     //     }
     // }
@@ -396,7 +396,7 @@ function WServHapiServer(opt = {}) {
                 // getUserIdByToken: (token) => {
                 //     return 'id-for-admin'
                 // },
-                getUserIdByToken: getUserIDFromToken,
+                getUserIdByToken,
 
                 // useDbOrm: true,
                 useDbOrm,

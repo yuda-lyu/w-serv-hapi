@@ -14,7 +14,7 @@ async function run() {
     let instWServHapiServer = new WServHapiServer({
         port: 8080,
         apis: [],
-        getUserIDFromToken: async (token) => { //可使用async或sync函數
+        getUserIdByToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
         useDbOrm: false,
