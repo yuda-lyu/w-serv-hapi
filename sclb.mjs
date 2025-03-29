@@ -84,4 +84,4 @@ client()
 // repeat...
 
 
-//node --experimental-modules --es-module-specifier-resolution=node sclb.mjs
+//node --experimental-modules sclb.mjs

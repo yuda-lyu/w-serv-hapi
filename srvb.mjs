@@ -17,18 +17,16 @@ async function run() {
         getUserIDFromToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
-        useDbORM: false,
-        // dbORMs: woItems,
-        // operORM: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
+        useDbOrm: false,
+        // kpOrm,
+        // operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
         // tableNamesExec,
         // methodsExec: ['select', 'insert', 'save', 'del'],
         // tableNamesSync,
-        extFuncs: { //接收參數第1個為userId, 之後才是前端給予參數
+        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
             execFunA,
             //...
         },
-        hookBefores: null,
-        hookAfters: null,
     })
 
     instWServHapiServer.on('error', (err) => {
@@ -51,4 +49,4 @@ run()
 // repeat...
 
 
-//node --experimental-modules --es-module-specifier-resolution=node srvb.mjs
+//node --experimental-modules srvb.mjs

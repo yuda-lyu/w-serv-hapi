@@ -5,7 +5,6 @@ import isbol from 'wsemi/src/isbol.mjs'
 import ispm from 'wsemi/src/ispm.mjs'
 import isWindow from 'wsemi/src/isWindow.mjs'
 import waitFun from 'wsemi/src/waitFun.mjs'
-import evem from 'wsemi/src/evem.mjs'
 import WConverhpClient from 'w-converhp/src/WConverhpClient.mjs'
 import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
 
@@ -93,12 +92,6 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *         },
  *         getAfterUpdateTableTags: (r) => {
  *             console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
- *         },
- *         getBeforePollingTableTags: () => {
- *             console.log('getBeforePollingTableTags')
- *         },
- *         getAfterPollingTableTags: () => {
- *             console.log('getAfterPollingTableTags')
  *         },
  *     })
  *
@@ -208,11 +201,7 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *
  */
 function WServHapiClient(opt = {}) {
-    let instWConverhpClient = null
-    let instWServWebdataClient = null
-
-    //ev
-    let ev = evem()
+    let instWConverClient = null
 
     async function core() {
 
@@ -268,13 +257,11 @@ function WServHapiClient(opt = {}) {
             recvData = () => { }
         }
 
-        //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags, getBeforePollingTableTags, getAfterPollingTableTags
+        //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags
         let getRefreshState = get(opt, 'getRefreshState')
         let getRefreshTable = get(opt, 'getRefreshTable')
         let getBeforeUpdateTableTags = get(opt, 'getBeforeUpdateTableTags')
         let getAfterUpdateTableTags = get(opt, 'getAfterUpdateTableTags')
-        let getBeforePollingTableTags = get(opt, 'getBeforePollingTableTags')
-        let getAfterPollingTableTags = get(opt, 'getAfterPollingTableTags')
 
         //showLog
         let showLog = get(opt, 'showLog')
@@ -306,68 +293,54 @@ function WServHapiClient(opt = {}) {
         }
 
         //WConverhpClient
-        instWConverhpClient = new WConverhpClient({
+        instWConverClient = new WConverhpClient({
             FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
             url: getUrl(),
         })
 
         //WServWebdataClient
-        instWServWebdataClient = new WServWebdataClient({
-            instWConverClient: instWConverhpClient,
-            // cbGetToken: () => {
-            //     return Vue.prototype.$store.state.userToken
-            // },
-            cbGetToken: getToken,
-            // cbGetServerMethods: (r) => {
-            //     console.log('$fapi', r)
-            //     Vue.prototype.$fapi = r
-            //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
-            // },
-            cbGetServerMethods: getServerMethods,
-            // cbRecvData: (r) => {
-            //     console.log('recvData', r.tableName, r.data)
-            //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
-            // },
-            cbRecvData: recvData,
-            cbGetRefreshState: getRefreshState,
-            cbGetRefreshTable: getRefreshTable,
-            cbBeforeUpdateTableTags: getBeforeUpdateTableTags,
-            cbAfterUpdateTableTags: getAfterUpdateTableTags,
-            cbBeforePollingTableTags: getBeforePollingTableTags,
-            cbAfterPollingTableTags: getAfterPollingTableTags,
-        })
+        instWConverClient = new WServWebdataClient(
+            instWConverClient,
+            {
 
-        //error
-        instWConverhpClient.on('error', (err) => {
-            if (showLog) {
-                console.log('instWConverhpClient error', err)
-            }
-        })
+                // funGetToken: () => {
+                //     return Vue.prototype.$store.state.userToken
+                // },
+                funGetToken: getToken,
 
-        //error
-        instWServWebdataClient.on('error', (err) => {
-            if (showLog) {
-                console.log('instWServWebdataClient error', err)
-            }
-        })
+                // funGetServerMethods: (r) => {
+                //     console.log('$fapi', r)
+                //     Vue.prototype.$fapi = r
+                //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
+                // },
+                funGetServerMethods: getServerMethods,
+
+                // funRecvData: (r) => {
+                //     console.log('recvData', r.tableName, r.data)
+                //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
+                // },
+                funRecvData: recvData,
+
+                funGetRefreshState: getRefreshState,
+                funGetRefreshTable: getRefreshTable,
+                funBeforeUpdateTableTags: getBeforeUpdateTableTags,
+                funAfterUpdateTableTags: getAfterUpdateTableTags,
+            })
 
     }
 
     //core
     core()
         .catch((err) => {
-            ev.emit('error', err)
+            try {
+                instWConverClient.emit('error', err)
+            }
+            catch (err) {
+                throw new Error(err)
+            }
         })
 
-    //save
-    ev.getInstWConverhpClient = () => {
-        return instWConverhpClient
-    }
-    ev.getInstWServWebdataClient = () => {
-        return instWServWebdataClient
-    }
-
-    return ev
+    return instWConverClient
 }
 
 

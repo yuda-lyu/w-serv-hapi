@@ -68,12 +68,6 @@ async function client() {
         getAfterUpdateTableTags: (r) => {
             console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
         },
-        getBeforePollingTableTags: () => {
-            console.log('getBeforePollingTableTags')
-        },
-        getAfterPollingTableTags: () => {
-            console.log('getAfterPollingTableTags')
-        },
     })
 
     instWServHapiClient.on('error', (err) => {
@@ -181,4 +175,4 @@ client()
 // getAfterUpdateTableTags needToRefresh false
 
 
-//node --experimental-modules --es-module-specifier-resolution=node scla.mjs
+//node --experimental-modules scla.mjs

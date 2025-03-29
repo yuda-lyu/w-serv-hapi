@@ -4,7 +4,6 @@ A wrapper hapi for data control and synchronization between nodejs and browser.
 ![language](https://img.shields.io/badge/language-JavaScript-orange.svg) 
 [![npm version](http://img.shields.io/npm/v/w-serv-hapi.svg?style=flat)](https://npmjs.org/package/w-serv-hapi) 
 [![license](https://img.shields.io/npm/l/w-serv-hapi.svg?style=flat)](https://npmjs.org/package/w-serv-hapi) 
-[![gzip file size](http://img.badgesize.io/yuda-lyu/w-serv-hapi/master/dist/w-serv-hapi-server.umd.js.svg?compression=gzip)](https://github.com/yuda-lyu/w-serv-hapi)
 [![npm download](https://img.shields.io/npm/dt/w-serv-hapi.svg)](https://npmjs.org/package/w-serv-hapi) 
 [![npm download](https://img.shields.io/npm/dm/w-serv-hapi.svg)](https://npmjs.org/package/w-serv-hapi) 
 [![jsdelivr download](https://img.shields.io/jsdelivr/npm/hm/w-serv-hapi.svg)](https://www.jsdelivr.com/package/npm/w-serv-hapi)
@@ -19,8 +18,6 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 
 ## Installation
 ### Using npm(ES6 module):
-> **Note:** `w-serv-hapi-server` and `w-serv-hapi-client` is mainly dependent on `lodash-es`, `w-serv-webdata`,`w-converhp` and `wsemi`.
-
 ```alias
 npm i w-serv-hapi
 ```
@@ -47,19 +44,19 @@ async function run() {
     let tableNamesExec = ['tabA', 'tabB']
     let tableNamesSync = ['tabA']
 
-    //woItems
-    let woItems = {}
+    //kpOrm
+    let kpOrm = {}
     for (let k in tableNamesExec) {
         let v = tableNamesExec[k]
         let opt = { ...optWOrm, cl: v }
         let wo = new WOrm(opt)
-        woItems[v] = wo
+        kpOrm[v] = wo
     }
 
     async function saveData(cl, r) {
 
         //w
-        let w = woItems[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
+        let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
 
         //save
         await w.save(r, { atomic: true }) //autoInsert: false
@@ -122,7 +119,7 @@ async function run() {
 
     let procCommon = async (userId, tableName, methodName, input) => {
         // console.log('procCommon call', tableName, methodName, input)
-        let r = await woItems[tableName][methodName](input)
+        let r = await kpOrm[tableName][methodName](input)
         // console.log('procCommon result', r)
         return r
     }
@@ -142,7 +139,7 @@ async function run() {
             return 'id-for-admin'
         },
         useDbORM: true,
-        dbORMs: woItems,
+        dbORMs: kpOrm,
         operORM: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
         tableNamesExec,
         methodsExec: ['select', 'insert', 'save', 'del'],
@@ -258,12 +255,6 @@ async function client() {
         getAfterUpdateTableTags: (r) => {
             console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
         },
-        getBeforePollingTableTags: () => {
-            console.log('getBeforePollingTableTags')
-        },
-        getAfterPollingTableTags: () => {
-            console.log('getAfterPollingTableTags')
-        },
     })
 
     instWServHapiClient.on('error', (err) => {
@@ -376,7 +367,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.13/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.14/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
