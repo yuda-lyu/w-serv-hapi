@@ -470,8 +470,14 @@ function WServHapiServer(opt = {}) {
         return server
     }
 
+    //getInstWConverServer
+    let getInstWConverServer = () => {
+        return instWConverServer
+    }
+
     //save
     ev.getServer = getServer
+    ev.getInstWConverServer = getInstWConverServer
 
     return ev
 }
