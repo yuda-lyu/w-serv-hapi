@@ -1,12 +1,12 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
     "form-data": "^4.0.2",
     "lodash-es": "^4.17.21",
-    "w-converhp": "^2.0.1",
-    "w-serv-webdata": "^1.0.34",
+    "w-converhp": "^2.0.3",
+    "w-serv-webdata": "^1.0.36",
     "wsemi": "^1.7.74"
   },
   "devDependencies": {

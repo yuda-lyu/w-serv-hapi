@@ -14,6 +14,10 @@ async function run() {
     let instWServHapiServer = new WServHapiServer({
         port: 8080,
         apis: [],
+        funCheck: ({ apiType, authorization, headers, query }) => {
+            console.log('funCheck', `apiType[${apiType}]`, `authorization[${authorization}]`)
+            return true
+        },
         getUserIdByToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },

@@ -11,7 +11,7 @@ async function client() {
         url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
-            return '' //Vue.prototype.$store.state.userToken
+            return 'token-for-test' //Vue.prototype.$store.state.userToken
         },
         getServerMethods: (r) => {
             console.log('getServerMethods', r)

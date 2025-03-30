@@ -16,8 +16,10 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @param {Object} [opt={}] 輸入設定物件，預設{}
  * @param {Function} [opt.FormData=()=>''] 輸入指定FormData函數，當於nodejs執行時需提供FormData才能使用，可安裝'form-data'並引用取得FormData，預設()=>''
  * @param {String} [opt.url='http://localhost:8080'] 輸入伺服器接口網址，前端常用window.location.origin+window.location.pathname，預設為'http://localhost:8080'
- * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用，預設false
+ * @param {String} [opt.apiName='api'] 輸入API名稱字串，預設'api'
  * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，預設()=>''
+ * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
+ * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用，預設false
  * @param {Function} opt.getServerMethods 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件
  * @param {Function} opt.recvData 輸入取得變更表資料的回調函數
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
@@ -229,6 +231,12 @@ function WServHapiClient(opt = {}) {
             useWaitToken = false
         }
 
+        //apiName
+        let apiName = get(opt, 'apiName')
+        if (!isestr(apiName)) {
+            apiName = 'api'
+        }
+
         //getToken
         let getToken = get(opt, 'getToken')
         if (!isfun(getToken)) {
@@ -238,6 +246,12 @@ function WServHapiClient(opt = {}) {
             getToken = () => {
                 return ''
             }
+        }
+
+        //tokenType
+        let tokenType = get(opt, 'tokenType')
+        if (!isestr(tokenType)) {
+            tokenType = 'Bearer'
         }
 
         //getServerMethods
@@ -291,6 +305,9 @@ function WServHapiClient(opt = {}) {
         instWConverClient = new WConverhpClient({
             FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
             url,
+            apiName,
+            getToken, //token會放於headers內, 供execute與upload使用, 於伺服器funCheck驗證用
+            tokenType,
         })
 
         //WServWebdataClient
@@ -301,7 +318,7 @@ function WServHapiClient(opt = {}) {
                 // funGetToken: () => {
                 //     return Vue.prototype.$store.state.userToken
                 // },
-                funGetToken: getToken,
+                funGetToken: getToken, //token會放於數據內, 於伺服器再通過getUserIdByToken取得使用者id用
 
                 // funGetServerMethods: (r) => {
                 //     console.log('$fapi', r)

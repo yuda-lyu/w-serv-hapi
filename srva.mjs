@@ -108,6 +108,10 @@ async function run() {
     let wsrv = new WServHapiServer({
         port: 8080,
         apis: [],
+        funCheck: ({ apiType, authorization, headers, query }) => {
+            console.log('funCheck', `apiType[${apiType}]`, `authorization[${authorization}]`)
+            return true
+        },
         getUserIdByToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
@@ -119,8 +123,8 @@ async function run() {
         tableNamesSync,
         kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
             uploadFile,
-            // getUserFromID,
-            // downloadFileFromID,
+            // getUserFromId,
+            // downloadFileFromId,
             // saveTableAndData,
             //...
         },
