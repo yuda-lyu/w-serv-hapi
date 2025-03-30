@@ -7,6 +7,7 @@ import isint from 'wsemi/src/isint.mjs'
 import isestr from 'wsemi/src/isestr.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
 import evem from 'wsemi/src/evem.mjs'
+import waitFun from 'wsemi/src/waitFun.mjs'
 import WConverhpServer from 'w-converhp/src/WConverhpServer.mjs'
 import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
 
@@ -351,7 +352,7 @@ function WServHapiServer(opt = {}) {
         //WConverhpServer
         instWConverServer = new WConverhpServer({
             serverHapi: server,
-            funCheck
+            funCheck,
         })
         instWConverServer.on('open', function() {
             if (showLog) {
@@ -473,12 +474,18 @@ function WServHapiServer(opt = {}) {
     })
 
     //getServer
-    let getServer = () => {
+    let getServer = async () => {
+        await waitFun(() => {
+            return server !== null
+        })
         return server
     }
 
     //getInstWConverServer
-    let getInstWConverServer = () => {
+    let getInstWConverServer = async () => {
+        await waitFun(() => {
+            return instWConverServer !== null
+        })
         return instWConverServer
     }
 

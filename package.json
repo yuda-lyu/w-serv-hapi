@@ -1,6 +1,6 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
     "form-data": "^4.0.2",
