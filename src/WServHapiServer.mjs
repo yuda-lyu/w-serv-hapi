@@ -294,7 +294,10 @@ function WServHapiServer(opt = {}) {
         server = new Hapi.Server({
             port,
             routes: {
-                // cors: useCors
+                timeout: {
+                    server: false, //關閉伺服器超時
+                    socket: false, //關閉socket超時
+                },
                 cors: {
                     origin: corsOrigins, //Access-Control-Allow-Origin
                     credentials: false, //Access-Control-Allow-Credentials
