@@ -8,10 +8,7 @@ async function client() {
     //WServHapiClient
     let instWServHapiClient = new WServHapiClient({
         FormData,
-        getUrl: () => {
-            //return window.location.origin + window.location.pathname
-            return 'http://localhost:8080'
-        },
+        url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
             return '' //Vue.prototype.$store.state.userToken

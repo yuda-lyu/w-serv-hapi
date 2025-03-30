@@ -15,7 +15,7 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @class
  * @param {Object} [opt={}] 輸入設定物件，預設{}
  * @param {Function} [opt.FormData=()=>''] 輸入指定FormData函數，當於nodejs執行時需提供FormData才能使用，可安裝'form-data'並引用取得FormData，預設()=>''
- * @param {Function} [opt.getUrl=()=>''] 輸入指定getUrl函數，提供伺服器接口網址，預設()=>''
+ * @param {String} [opt.url='http://localhost:8080'] 輸入伺服器接口網址，前端常用window.location.origin+window.location.pathname，預設為'http://localhost:8080'
  * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用，預設false
  * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，預設()=>''
  * @param {Function} opt.getServerMethods 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件
@@ -33,10 +33,7 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *     //WServHapiClient
  *     let instWServHapiClient = new WServHapiClient({
  *         FormData,
- *         getUrl: () => {
- *             //return window.location.origin + window.location.pathname
- *             return 'http://localhost:8080'
- *         },
+ *         url: 'http://localhost:8080',
  *         useWaitToken: false,
  *         getToken: () => {
  *             return '' //Vue.prototype.$store.state.userToken
@@ -203,6 +200,10 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
 function WServHapiClient(opt = {}) {
     let instWConverClient = null
 
+    //env
+    let env = isWindow() ? 'browser' : 'nodejs'
+    // console.log('env', env)
+
     async function core() {
 
         //FormData
@@ -211,21 +212,15 @@ function WServHapiClient(opt = {}) {
         //     throw new Error(`invalid opt.FormData in nodejs`)
         // }
 
-        //env
-        let env = isWindow() ? 'browser' : 'nodejs'
-        // console.log('env', env)
-
         //check, 於瀏覽器端自動停用外部引入之FormData
         if (env === 'browser') {
             FormData = undefined
         }
 
-        //getUrl
-        let getUrl = get(opt, 'getUrl')
-        if (!isfun(getUrl)) {
-            getUrl = () => {
-                return window.location.origin + window.location.pathname
-            }
+        //url
+        let url = get(opt, 'url')
+        if (!isestr(url)) {
+            url = 'http://localhost:8080'
         }
 
         //useWaitToken
@@ -295,7 +290,7 @@ function WServHapiClient(opt = {}) {
         //WConverhpClient
         instWConverClient = new WConverhpClient({
             FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
-            url: getUrl(),
+            url,
         })
 
         //WServWebdataClient

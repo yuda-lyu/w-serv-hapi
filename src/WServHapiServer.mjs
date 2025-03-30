@@ -29,7 +29,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Array} [opt.tableNamesSync=[]] 輸入指定能被同步的表名陣列，預設[]
  * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
- * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，可監聽error事件
+ * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，提供getInstWConverServer回傳擴展功能實體，可監聽error事件
  * @example
  *
  * import fs from 'fs'

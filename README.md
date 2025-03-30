@@ -195,10 +195,7 @@ async function client() {
     //WServHapiClient
     let instWServHapiClient = new WServHapiClient({
         FormData,
-        getUrl: () => {
-            //return window.location.origin + window.location.pathname
-            return 'http://localhost:8080'
-        },
+        url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
             return '' //Vue.prototype.$store.state.userToken
@@ -367,7 +364,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.17/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.18/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
@@ -381,10 +378,7 @@ async function client() {
     let WServHapiClient = window['w-serv-hapi-client']
     let wshc = new WServHapiClient({
         // FormData,
-        getUrl: () => {
-            //return window.location.origin + window.location.pathname
-            return 'http://localhost:8080'
-        },
+        url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
             return '' //Vue.prototype.$store.state.userToken
