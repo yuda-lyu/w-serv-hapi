@@ -29,7 +29,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Array} [opt.tableNamesSync=[]] 輸入指定能被同步的表名陣列，預設[]
  * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
- * @returns {Object} 回傳物件，其內server為hapi伺服器實體，wsrv為w-converhp的伺服器事件物件，wsds為w-serv-webdata的伺服器事件物件，可監聽error事件
+ * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，可監聽error事件
  * @example
  *
  * import fs from 'fs'
@@ -464,6 +464,14 @@ function WServHapiServer(opt = {}) {
         console.log('uncaughtException', err) //強制顯示
         ev.emit('error', { mode: 'uncaughtException', err }) //用ev.emit至外部
     })
+
+    //getServer
+    let getServer = () => {
+        return server
+    }
+
+    //save
+    ev.getServer = getServer
 
     return ev
 }
