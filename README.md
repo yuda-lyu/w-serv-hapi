@@ -23,9 +23,8 @@ npm i w-serv-hapi
 ```
 
 #### Example for w-serv-hapi-server:
-> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/srva.mjs)]
+> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/srv.mjs)]
 ```alias
-import fs from 'fs'
 import _ from 'lodash-es'
 import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
 import WServHapiServer from './src/WServHapiServer.mjs'
@@ -126,7 +125,7 @@ async function run() {
 
     let uploadFile = async (userId, { name, u8a }) => {
         console.log('uploadFile', userId, name, _.size(u8a))
-        fs.writeFileSync(name, Buffer.from(u8a))
+        // fs.writeFileSync(name, Buffer.from(u8a))
         console.log('uploadFile writeFileSync finish')
         return 'finish'
     }
@@ -184,7 +183,7 @@ run()
 ```
 
 #### Example for w-serv-hapi-client:
-> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/scla.mjs)]
+> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/scl.mjs)]
 ```alias
 import FormData from 'form-data'
 import WServHapiClient from './src/WServHapiClient.mjs'
@@ -364,11 +363,11 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.22/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.23/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
-> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/weba.html)]
+> **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/web.html)]
 ```alias
 let $fapi = null
 
@@ -435,16 +434,16 @@ client()
         console.log(err)
     })
 // getServerMethods {tabA: {…}, tabB: {…}, uploadFile: ƒ}
-// weba.html:51 select tabA 100 339 upload
-// weba.html:51 select tabA 100 310 donwload
-// weba.html:54 r.tabA.select then (3) [{…}, {…}, {…}]
-// weba.html:62 select tabB 100 339 upload
-// weba.html:62 select tabB 100 258 donwload
-// weba.html:65 r.tabB.select then (2) [{…}, {…}]
-// weba.html:77 uploadFile 100 386 upload
-// weba.html:77 uploadFile 100 154 donwload
-// weba.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-// weba.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
+// select tabA 100 339 upload
+// select tabA 100 310 donwload
+// r.tabA.select then (3) [{…}, {…}, {…}]
+// select tabB 100 339 upload
+// select tabB 100 258 donwload
+// r.tabB.select then (2) [{…}, {…}]
+// uploadFile 100 386 upload
+// uploadFile 100 154 donwload
+// recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
+// recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
 // repeat...
 
 ```

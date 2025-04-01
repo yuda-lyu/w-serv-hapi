@@ -1,4 +1,4 @@
-import fs from 'fs'
+// import fs from 'fs'
 import _ from 'lodash-es'
 import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
 import WServHapiServer from './src/WServHapiServer.mjs'
@@ -32,7 +32,7 @@ async function run() {
         let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
 
         //save
-        await w.save(r, { atomic: true }) //autoInsert: false
+        await w.save(r) //autoInsert: false
             .then(function(msg) {
                 console.log('save then', cl, msg)
             })
@@ -99,17 +99,22 @@ async function run() {
 
     let uploadFile = async (userId, { name, u8a }) => {
         console.log('uploadFile', userId, name, _.size(u8a))
-        fs.writeFileSync(name, Buffer.from(u8a))
+        // fs.writeFileSync(name, Buffer.from(u8a))
         console.log('uploadFile writeFileSync finish')
         return 'finish'
+    }
+
+    let add = async (userId, { pa, pb }) => {
+        // console.log('add', userId, pa, pb)
+        return `result: pa+pb=${pa + pb}`
     }
 
     //WServHapiServer
     let wsrv = new WServHapiServer({
         port: 8080,
         apis: [],
-        funCheck: ({ apiType, authorization, headers, query }) => {
-            console.log('funCheck', `apiType[${apiType}]`, `authorization[${authorization}]`)
+        verifyConn: ({ apiType, authorization, headers, query }) => {
+            console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
             return true
         },
         getUserIdByToken: async (token) => { //可使用async或sync函數
@@ -123,9 +128,7 @@ async function run() {
         tableNamesSync,
         kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
             uploadFile,
-            // getUserFromId,
-            // downloadFileFromId,
-            // saveTableAndData,
+            add,
             //...
         },
         // fnTableTags: 'tableTags-serv-hapi.json',
@@ -158,4 +161,4 @@ run()
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 
 
-//node --experimental-modules srva.mjs
+//node --experimental-modules srv.mjs

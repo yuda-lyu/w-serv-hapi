@@ -306,7 +306,7 @@ function WServHapiClient(opt = {}) {
             FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
             url,
             apiName,
-            getToken, //token會放於headers內, 供execute與upload使用, 於伺服器funCheck驗證用
+            getToken, //token會放於headers內, 供execute與upload使用, 於伺服器verifyConn驗證用
             tokenType,
         })
 
@@ -315,28 +315,28 @@ function WServHapiClient(opt = {}) {
             instWConverClient,
             {
 
-                // funGetToken: () => {
+                // getToken: () => {
                 //     return Vue.prototype.$store.state.userToken
                 // },
-                funGetToken: getToken, //token會放於數據內, 於伺服器再通過getUserIdByToken取得使用者id用
+                getToken, //token會放於數據內, 於伺服器再通過getUserIdByToken取得使用者id用
 
-                // funGetServerMethods: (r) => {
+                // getServerMethods: (r) => {
                 //     console.log('$fapi', r)
                 //     Vue.prototype.$fapi = r
                 //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
                 // },
-                funGetServerMethods: getServerMethods,
+                getServerMethods,
 
-                // funRecvData: (r) => {
+                // recvData: (r) => {
                 //     console.log('recvData', r.tableName, r.data)
                 //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
                 // },
-                funRecvData: recvData,
+                recvData,
 
-                funGetRefreshState: getRefreshState,
-                funGetRefreshTable: getRefreshTable,
-                funBeforeUpdateTableTags: getBeforeUpdateTableTags,
-                funAfterUpdateTableTags: getAfterUpdateTableTags,
+                getRefreshState: getRefreshState,
+                getRefreshTable: getRefreshTable,
+                getBeforeUpdateTableTags: getBeforeUpdateTableTags,
+                getAfterUpdateTableTags: getAfterUpdateTableTags,
             })
 
     }

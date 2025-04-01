@@ -43,10 +43,23 @@ async function client() {
             r.uploadFile({
                 name: 'zdata.b1',
                 u8a: new Uint8Array([66, 97, 115]),
-            // u8a: new Uint8Array(fs.readFileSync('../_data/500mb.7z')), //最多500mb, 因測試使用w-converhp, 其依賴新版@hapi/pez無法處理1g檔案, 會出現: Invalid string length
             }, ({ prog, p, m }) => {
                 console.log('uploadFile', prog, p, m)
             })
+
+            //add
+            r.add({
+                pa: 1,
+                pb: 2.5,
+            }, ({ prog, p, m }) => {
+                console.log('add', prog, p, m)
+            })
+                .then((res) => {
+                    console.log('add then', res)
+                })
+                .catch((err) => {
+                    console.log('add catch', err)
+                })
 
         },
         recvData: (r) => {
@@ -172,4 +185,4 @@ client()
 // getAfterUpdateTableTags needToRefresh false
 
 
-//node --experimental-modules scla.mjs
+//node --experimental-modules scl.mjs

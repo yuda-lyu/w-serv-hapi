@@ -39,18 +39,53 @@
                     getServerMethods: (r) => {
                         console.log('getServerMethods', r)
 
-                        //execFunA
-                        r.execFunA({
+                        //save
+                        //Vue.prototype.$fapi = r
+                        $fapi = r
+
+                        //select tabA
+                        r.tabA.select(({ prog, p, m }) => {
+                            console.log('select tabA', prog, p, m)
+                        })
+                            .then((res) => {
+                                console.log('r.tabA.select then', res)
+                            })
+                            .catch((err) => {
+                                console.log('r.tabA.select catch', err)
+                            })
+
+                        //select tabB
+                        r.tabB.select(({ prog, p, m }) => {
+                            console.log('select tabB', prog, p, m)
+                        })
+                            .then((res) => {
+                                console.log('r.tabB.select then', res)
+                            })
+                            .catch((err) => {
+                                console.log('r.tabB.select catch', err)
+                            })
+
+                        //uploadFile
+                        r.uploadFile({
+                            name: 'zdata.b1',
+                            u8a: new Uint8Array([66, 97, 115]),
+                        // u8a: new Uint8Array(fs.readFileSync('../_data/500mb.7z')), //最多500mb, 因測試使用w-converhp, 其依賴新版@hapi/pez無法處理1g檔案, 會出現: Invalid string length
+                        }, ({ prog, p, m }) => {
+                            console.log('uploadFile', prog, p, m)
+                        })
+
+                        //add
+                        r.add({
                             pa: 1,
                             pb: 2.5,
                         }, ({ prog, p, m }) => {
-                            console.log('execFunA', prog, p, m)
+                            console.log('add', prog, p, m)
                         })
                             .then((res) => {
-                                console.log('execFunA then', res)
+                                console.log('add then', res)
                             })
                             .catch((err) => {
-                                console.log('execFunA catch', err)
+                                console.log('add catch', err)
                             })
 
                     },
@@ -67,16 +102,16 @@
                     console.log(err)
                 })
             // getServerMethods {tabA: {…}, tabB: {…}, uploadFile: ƒ}
-            // webb.html:51 select tabA 100 339 upload
-            // webb.html:51 select tabA 100 310 donwload
-            // webb.html:54 r.tabA.select then (3) [{…}, {…}, {…}]
-            // webb.html:62 select tabB 100 339 upload
-            // webb.html:62 select tabB 100 258 donwload
-            // webb.html:65 r.tabB.select then (2) [{…}, {…}]
-            // webb.html:77 uploadFile 100 386 upload
-            // webb.html:77 uploadFile 100 154 donwload
-            // webb.html:82 recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-            // webb.html:82 recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
+            // select tabA 100 339 upload
+            // select tabA 100 310 donwload
+            // r.tabA.select then (3) [{…}, {…}, {…}]
+            // select tabB 100 339 upload
+            // select tabB 100 258 donwload
+            // r.tabB.select then (2) [{…}, {…}]
+            // uploadFile 100 386 upload
+            // uploadFile 100 154 donwload
+            // recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
+            // recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
             // repeat...
 
         </script>
