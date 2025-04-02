@@ -1,0 +1,31 @@
+{
+  "servhapi:tabA": [
+    {
+      "id": "id-tabA-peter",
+      "name": "peter",
+      "value": "value-5"
+    },
+    {
+      "id": "id-tabA-rosemary",
+      "name": "rosemary",
+      "value": 123.456
+    },
+    {
+      "id": "id-tabA-kettle",
+      "name": "kettle",
+      "value": 456
+    }
+  ],
+  "servhapi:tabB": [
+    {
+      "id": "id-tabB-peter",
+      "name": "peter",
+      "value": 123
+    },
+    {
+      "id": "id-tabB-rosemary",
+      "name": "rosemary",
+      "value": 123.456
+    }
+  ]
+}

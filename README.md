@@ -25,16 +25,25 @@ npm i w-serv-hapi
 #### Example for w-serv-hapi-server:
 > **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/srv.mjs)]
 ```alias
+import fs from 'fs'
 import _ from 'lodash-es'
-import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
+// import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORM
+import WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORM
 import WServHapiServer from './src/WServHapiServer.mjs'
-
 
 async function run() {
 
+    //預先刪除w-orm-lowdb資料庫
+    try {
+        fs.unlinkSync('./db.json')
+    }
+    catch (err) {}
+
     //optWOrm
     let optWOrm = {
-        url: 'mongodb://username:password@127.0.0.1:27017',
+        // url: 'mongodb://username:password@127.0.0.1:27017',
+        // db: 'servhapi',
+        url: './db.json',
         db: 'servhapi',
         cl: '',
     }
@@ -58,7 +67,7 @@ async function run() {
         let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件
 
         //save
-        await w.save(r, { atomic: true }) //autoInsert: false
+        await w.save(r) //autoInsert: false
             .then(function(msg) {
                 console.log('save then', cl, msg)
             })
@@ -101,6 +110,12 @@ async function run() {
     ]
     await saveData('tabB', r)
 
+    let ntv = 0
+    let genValue = () => {
+        ntv++
+        return `value-${ntv}`
+    }
+
     let n = 0
     let tn = setInterval(() => {
         n++
@@ -108,7 +123,7 @@ async function run() {
         r = {
             id: 'id-tabA-peter',
             name: 'peter',
-            value: Math.random(),
+            value: genValue(),
         }
         saveData('tabA', r)
         if (n >= 5) {
@@ -130,32 +145,44 @@ async function run() {
         return 'finish'
     }
 
+    let add = async (userId, { pa, pb }) => {
+        // console.log('add', userId, pa, pb)
+        return `result: pa+pb=${pa + pb}`
+    }
+
+    let ntg = 0
+    let genTag = () => {
+        ntg++
+        return `tag-${ntg}`
+    }
+
     //WServHapiServer
-    let instWServHapiServer = new WServHapiServer({
+    let wsrv = new WServHapiServer({
         port: 8080,
         apis: [],
-        getUserIDFromToken: async (token) => { //可使用async或sync函數
+        verifyConn: ({ apiType, authorization, headers, query }) => {
+            console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
+            return true
+        },
+        getUserIdByToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
-        useDbORM: true,
-        dbORMs: kpOrm,
-        operORM: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
+        useDbOrm: true,
+        kpOrm,
+        operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
         tableNamesExec,
         methodsExec: ['select', 'insert', 'save', 'del'],
         tableNamesSync,
-        extFuncs: { //接收參數第1個為userId, 之後才是前端給予參數
+        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
             uploadFile,
-            // getUserFromID,
-            // downloadFileFromID,
-            // saveTableAndData,
+            add,
             //...
         },
-        hookBefores: null,
-        hookAfters: null,
         // fnTableTags: 'tableTags-serv-hapi.json',
+        genTag,
     })
 
-    instWServHapiServer.on('error', (err) => {
+    wsrv.on('error', (err) => {
         console.log(err)
     })
 
@@ -163,13 +190,15 @@ async function run() {
 run()
 
 // save then tabA [
-//   { n: 1, nModified: 1, ok: 1 },
-//   { n: 1, nModified: 1, ok: 1 },
-//   { n: 1, nModified: 1, ok: 1 }
+//   { n: 1, nInserted: 1, ok: 1 },
+//   { n: 1, nInserted: 1, ok: 1 },
+//   { n: 1, nInserted: 1, ok: 1 }
 // ]
-// save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://DESKTOP-5UNLNF8:8080
-// Server[port:8080]: open
+// save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]
+// Server running at: http://DESKTOP-6R7USAO:8080
+// Server[port:8080]: now clients: 1
+// uploadFile id-for-admin zdata.b1 3
+// uploadFile writeFileSync finish
 // update tabA 1
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 // update tabA 2
@@ -185,9 +214,9 @@ run()
 #### Example for w-serv-hapi-client:
 > **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/scl.mjs)]
 ```alias
+// import fs from 'fs'
 import FormData from 'form-data'
 import WServHapiClient from './src/WServHapiClient.mjs'
-
 
 async function client() {
 
@@ -197,7 +226,7 @@ async function client() {
         url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
-            return '' //Vue.prototype.$store.state.userToken
+            return 'token-for-test' //Vue.prototype.$store.state.userToken
         },
         getServerMethods: (r) => {
             console.log('getServerMethods', r)
@@ -229,10 +258,23 @@ async function client() {
             r.uploadFile({
                 name: 'zdata.b1',
                 u8a: new Uint8Array([66, 97, 115]),
-            // u8a: new Uint8Array(fs.readFileSync('../_data/500mb.7z')), //最多500mb, 因測試使用w-converhp, 其依賴新版@hapi/pez無法處理1g檔案, 會出現: Invalid string length
             }, ({ prog, p, m }) => {
                 console.log('uploadFile', prog, p, m)
             })
+
+            //add
+            r.add({
+                pa: 1,
+                pb: 2.5,
+            }, ({ prog, p, m }) => {
+                console.log('add', prog, p, m)
+            })
+                .then((res) => {
+                    console.log('add then', res)
+                })
+                .catch((err) => {
+                    console.log('add catch', err)
+                })
 
         },
         recvData: (r) => {
@@ -273,86 +315,100 @@ client()
 //     save: [AsyncFunction: f],
 //     del: [AsyncFunction: f]
 //   },
-//   uploadFile: [AsyncFunction: f]
+//   uploadFile: [AsyncFunction: f],
+//   add: [AsyncFunction: f]
 // }
+// select tabA 100 98 upload
+// select tabB 100 98 upload
+// add 100 107 upload
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-1
+// select tabA 100 246 download
 // r.tabA.select then [
 //   { id: 'id-tabA-peter', name: 'peter', value: 123 },
 //   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
 //   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 // ]
+// add 100 93 download
+// add then result: pa+pb=3.5
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-1',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// select tabB 100 194 download
 // r.tabB.select then [
 //   { id: 'id-tabB-peter', name: 'peter', value: 123 },
 //   { id: 'id-tabB-rosemary', name: 'rosemary', value: 123.456 }
 // ]
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag kFv3W1
+// getRefreshTable tableName tabA timeTag tag-2
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: 'kFv3W1',
+//   timeTag: 'tag-2',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-1' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:39+08:00|Mkmsfo
+// getRefreshTable tableName tabA timeTag tag-3
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:39+08:00|Mkmsfo',
+//   timeTag: 'tag-3',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.2695575980174958 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-2' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:42+08:00|hqCtKH
+// getRefreshTable tableName tabA timeTag tag-4
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:42+08:00|hqCtKH',
+//   timeTag: 'tag-4',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.5347793912758274 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-3' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:45+08:00|FA4NPZ
+// getRefreshTable tableName tabA timeTag tag-5
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:45+08:00|FA4NPZ',
+//   timeTag: 'tag-5',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.5995958376378325 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-4' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:48+08:00|8Q88uv
+// getRefreshTable tableName tabA timeTag tag-6
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:48+08:00|8Q88uv',
+//   timeTag: 'tag-6',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.45049512863192986 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
-//   ]
-// }
-// getAfterUpdateTableTags needToRefresh false
-// getBeforeUpdateTableTags needToRefresh true
-// getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:51+08:00|1k3U1P
-// recvData {
-//   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:51+08:00|1k3U1P',
-//   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.07134333448641317 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-5' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
@@ -363,7 +419,7 @@ client()
 
 [Necessary] Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.23/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.24/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
@@ -420,10 +476,36 @@ async function client() {
                 console.log('uploadFile', prog, p, m)
             })
 
+            //add
+            r.add({
+                pa: 1,
+                pb: 2.5,
+            }, ({ prog, p, m }) => {
+                console.log('add', prog, p, m)
+            })
+                .then((res) => {
+                    console.log('add then', res)
+                })
+                .catch((err) => {
+                    console.log('add catch', err)
+                })
+
         },
         recvData: (r) => {
             console.log('recvData', r)
             //Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
+        },
+        getRefreshState: (r) => {
+            console.log('getRefreshState', 'needToRefresh', r.needToRefresh)
+        },
+        getRefreshTable: (r) => {
+            console.log('getRefreshTable', 'tableName', r.tableName, 'timeTag', r.timeTag)
+        },
+        getBeforeUpdateTableTags: (r) => {
+            console.log('getBeforeUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
+        },
+        getAfterUpdateTableTags: (r) => {
+            console.log('getAfterUpdateTableTags', 'needToRefresh', JSON.stringify(r.oldTableTags) !== JSON.stringify(r.newTableTags))
         },
     })
 
@@ -433,17 +515,115 @@ client()
     .catch((err) => {
         console.log(err)
     })
-// getServerMethods {tabA: {…}, tabB: {…}, uploadFile: ƒ}
-// select tabA 100 339 upload
-// select tabA 100 310 donwload
-// r.tabA.select then (3) [{…}, {…}, {…}]
-// select tabB 100 339 upload
-// select tabB 100 258 donwload
-// r.tabB.select then (2) [{…}, {…}]
-// uploadFile 100 386 upload
-// uploadFile 100 154 donwload
-// recvData {tableName: 'tabA', timeTag: 'g1vSkQ', data: Array(3)}
-// recvData {tableName: 'tabA', timeTag: '2022-01-28T14:32:24+08:00|16nHaJ', data: Array(3)}
-// repeat...
 
+// getServerMethods {
+//   tabA: {
+//     select: [AsyncFunction: f],
+//     insert: [AsyncFunction: f],
+//     save: [AsyncFunction: f],
+//     del: [AsyncFunction: f]
+//   },
+//   tabB: {
+//     select: [AsyncFunction: f],
+//     insert: [AsyncFunction: f],
+//     save: [AsyncFunction: f],
+//     del: [AsyncFunction: f]
+//   },
+//   uploadFile: [AsyncFunction: f],
+//   add: [AsyncFunction: f]
+// }
+// select tabA 100 98 upload
+// select tabB 100 98 upload
+// add 100 107 upload
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-1
+// select tabA 100 246 download
+// r.tabA.select then [
+//   { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+// ]
+// add 100 93 download
+// add then result: pa+pb=3.5
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-1',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// select tabB 100 194 download
+// r.tabB.select then [
+//   { id: 'id-tabB-peter', name: 'peter', value: 123 },
+//   { id: 'id-tabB-rosemary', name: 'rosemary', value: 123.456 }
+// ]
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-2
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-2',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-1' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-3
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-3',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-2' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-4
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-4',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-3' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-5
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-5',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-4' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-6
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-6',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-5' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
 ```

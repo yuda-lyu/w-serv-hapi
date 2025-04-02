@@ -1,14 +1,23 @@
-// import fs from 'fs'
+import fs from 'fs'
 import _ from 'lodash-es'
-import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
+// import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORM
+import WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORM
 import WServHapiServer from './src/WServHapiServer.mjs'
 
 
 async function run() {
 
+    //預先刪除w-orm-lowdb資料庫
+    try {
+        fs.unlinkSync('./db.json')
+    }
+    catch (err) {}
+
     //optWOrm
     let optWOrm = {
-        url: 'mongodb://username:password@127.0.0.1:27017',
+        // url: 'mongodb://username:password@127.0.0.1:27017',
+        // db: 'servhapi',
+        url: './db.json',
         db: 'servhapi',
         cl: '',
     }
@@ -75,6 +84,12 @@ async function run() {
     ]
     await saveData('tabB', r)
 
+    let ntv = 0
+    let genValue = () => {
+        ntv++
+        return `value-${ntv}`
+    }
+
     let n = 0
     let tn = setInterval(() => {
         n++
@@ -82,7 +97,7 @@ async function run() {
         r = {
             id: 'id-tabA-peter',
             name: 'peter',
-            value: Math.random(),
+            value: genValue(),
         }
         saveData('tabA', r)
         if (n >= 5) {
@@ -109,6 +124,12 @@ async function run() {
         return `result: pa+pb=${pa + pb}`
     }
 
+    let ntg = 0
+    let genTag = () => {
+        ntg++
+        return `tag-${ntg}`
+    }
+
     //WServHapiServer
     let wsrv = new WServHapiServer({
         port: 8080,
@@ -132,6 +153,7 @@ async function run() {
             //...
         },
         // fnTableTags: 'tableTags-serv-hapi.json',
+        genTag,
     })
 
     wsrv.on('error', (err) => {
@@ -142,13 +164,15 @@ async function run() {
 run()
 
 // save then tabA [
-//   { n: 1, nModified: 1, ok: 1 },
-//   { n: 1, nModified: 1, ok: 1 },
-//   { n: 1, nModified: 1, ok: 1 }
+//   { n: 1, nInserted: 1, ok: 1 },
+//   { n: 1, nInserted: 1, ok: 1 },
+//   { n: 1, nInserted: 1, ok: 1 }
 // ]
-// save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
-// Server running at: http://DESKTOP-5UNLNF8:8080
-// Server[port:8080]: open
+// save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]
+// Server running at: http://DESKTOP-6R7USAO:8080
+// Server[port:8080]: now clients: 1
+// uploadFile id-for-admin zdata.b1 3
+// uploadFile writeFileSync finish
 // update tabA 1
 // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
 // update tabA 2

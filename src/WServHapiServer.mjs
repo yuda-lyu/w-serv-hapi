@@ -1,6 +1,8 @@
 import Hapi from '@hapi/hapi'
 import Inert from '@hapi/inert'
 import get from 'lodash-es/get.js'
+import now2str from 'wsemi/src/now2str.mjs'
+import genID from 'wsemi/src/genID.mjs'
 import isearr from 'wsemi/src/isearr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
@@ -31,21 +33,31 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Array} [opt.methodsExec=['select','insert','save','del']] 輸入指定綁定操作器的方式陣列，可選'select'、'insert'、'save'、'del'、'delAll'，預設['select', 'insert', 'save', 'del']
  * @param {Array} [opt.tableNamesSync=[]] 輸入指定能被同步的表名陣列，預設[]
  * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
+ * @param {String} [opt.fpTableTags='tableTags.json'] 輸入儲存各資料表時間戳檔案路徑串，預設'./tableTags.json'
+ * @param {Function} [opt.genTag=()=>'{random string}'] 輸入產生不重複識別碼函數，預設()=>'{random string}'
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
  * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，提供getInstWConverServer回傳擴展功能實體，可監聽error事件
  * @example
  *
  * import fs from 'fs'
  * import _ from 'lodash-es'
- * import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'
+ * // import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORM
+ * import WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORM
  * import WServHapiServer from './src/WServHapiServer.mjs'
- *
  *
  * async function run() {
  *
+ *     //預先刪除w-orm-lowdb資料庫
+ *     try {
+ *         fs.unlinkSync('./db.json')
+ *     }
+ *     catch (err) {}
+ *
  *     //optWOrm
  *     let optWOrm = {
- *         url: 'mongodb://username:password@127.0.0.1:27017',
+ *         // url: 'mongodb://username:password@127.0.0.1:27017',
+ *         // db: 'servhapi',
+ *         url: './db.json',
  *         db: 'servhapi',
  *         cl: '',
  *     }
@@ -112,6 +124,12 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     ]
  *     await saveData('tabB', r)
  *
+ *     let ntv = 0
+ *     let genValue = () => {
+ *         ntv++
+ *         return `value-${ntv}`
+ *     }
+ *
  *     let n = 0
  *     let tn = setInterval(() => {
  *         n++
@@ -119,7 +137,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *         r = {
  *             id: 'id-tabA-peter',
  *             name: 'peter',
- *             value: Math.random(),
+ *             value: genValue(),
  *         }
  *         saveData('tabA', r)
  *         if (n >= 5) {
@@ -141,10 +159,25 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *         return 'finish'
  *     }
  *
+ *     let add = async (userId, { pa, pb }) => {
+ *         // console.log('add', userId, pa, pb)
+ *         return `result: pa+pb=${pa + pb}`
+ *     }
+ *
+ *     let ntg = 0
+ *     let genTag = () => {
+ *         ntg++
+ *         return `tag-${ntg}`
+ *     }
+ *
  *     //WServHapiServer
- *     let instWServHapiServer = new WServHapiServer({
+ *     let wsrv = new WServHapiServer({
  *         port: 8080,
  *         apis: [],
+ *         verifyConn: ({ apiType, authorization, headers, query }) => {
+ *             console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
+ *             return true
+ *         },
  *         getUserIdByToken: async (token) => { //可使用async或sync函數
  *             return 'id-for-admin'
  *         },
@@ -156,15 +189,14 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *         tableNamesSync,
  *         kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數
  *             uploadFile,
- *             // getUserFromID,
- *             // downloadFileFromID,
- *             // saveTableAndData,
+ *             add,
  *             //...
  *         },
  *         // fnTableTags: 'tableTags-serv-hapi.json',
+ *         genTag,
  *     })
  *
- *     instWServHapiServer.on('error', (err) => {
+ *     wsrv.on('error', (err) => {
  *         console.log(err)
  *     })
  *
@@ -172,16 +204,25 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * run()
  *
  * // save then tabA [
- * //     { n: 1, nModified: 1, ok: 1 },
- * //     { n: 1, nModified: 1, ok: 1 },
- * //     { n: 1, nModified: 1, ok: 1 }
+ * //   { n: 1, nInserted: 1, ok: 1 },
+ * //   { n: 1, nInserted: 1, ok: 1 },
+ * //   { n: 1, nInserted: 1, ok: 1 }
  * // ]
- * // save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]
- * // Server running at: http://localhost:8080
- * // Server[port:8080]: open
- * // update tabA
+ * // save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]
+ * // Server running at: http://DESKTOP-6R7USAO:8080
+ * // Server[port:8080]: now clients: 1
+ * // uploadFile id-for-admin zdata.b1 3
+ * // uploadFile writeFileSync finish
+ * // update tabA 1
  * // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
- * // repeat...
+ * // update tabA 2
+ * // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+ * // update tabA 3
+ * // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+ * // update tabA 4
+ * // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
+ * // update tabA 5
+ * // save then tabA [ { n: 1, nModified: 1, ok: 1 } ]
  *
  */
 function WServHapiServer(opt = {}) {
@@ -280,6 +321,14 @@ function WServHapiServer(opt = {}) {
 
     //fnTableTags
     let fnTableTags = get(opt, 'fnTableTags', null)
+
+    //genTag
+    let genTag = get(opt, 'genTag')
+    if (!isfun(genTag)) {
+        genTag = () => {
+            return now2str() + '|' + genID(6)
+        }
+    }
 
     //showLog
     let showLog = get(opt, 'showLog')
@@ -431,7 +480,7 @@ function WServHapiServer(opt = {}) {
                 // },
 
                 fnTableTags,
-                // fnTableTags: 'tableTags.json',
+                genTag,
 
             })
 

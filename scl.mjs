@@ -100,86 +100,100 @@ client()
 //     save: [AsyncFunction: f],
 //     del: [AsyncFunction: f]
 //   },
-//   uploadFile: [AsyncFunction: f]
+//   uploadFile: [AsyncFunction: f],
+//   add: [AsyncFunction: f]
 // }
+// select tabA 100 98 upload
+// select tabB 100 98 upload
+// add 100 107 upload
+// getBeforeUpdateTableTags needToRefresh true
+// getRefreshState needToRefresh true
+// getRefreshTable tableName tabA timeTag tag-1
+// select tabA 100 246 download
 // r.tabA.select then [
 //   { id: 'id-tabA-peter', name: 'peter', value: 123 },
 //   { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
 //   { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 // ]
+// add 100 93 download
+// add then result: pa+pb=3.5
+// recvData {
+//   tableName: 'tabA',
+//   timeTag: 'tag-1',
+//   data: [
+//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//   ]
+// }
+// getAfterUpdateTableTags needToRefresh false
+// select tabB 100 194 download
 // r.tabB.select then [
 //   { id: 'id-tabB-peter', name: 'peter', value: 123 },
 //   { id: 'id-tabB-rosemary', name: 'rosemary', value: 123.456 }
 // ]
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag kFv3W1
+// getRefreshTable tableName tabA timeTag tag-2
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: 'kFv3W1',
+//   timeTag: 'tag-2',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 123 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-1' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:39+08:00|Mkmsfo
+// getRefreshTable tableName tabA timeTag tag-3
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:39+08:00|Mkmsfo',
+//   timeTag: 'tag-3',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.2695575980174958 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-2' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:42+08:00|hqCtKH
+// getRefreshTable tableName tabA timeTag tag-4
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:42+08:00|hqCtKH',
+//   timeTag: 'tag-4',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.5347793912758274 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-3' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:45+08:00|FA4NPZ
+// getRefreshTable tableName tabA timeTag tag-5
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:45+08:00|FA4NPZ',
+//   timeTag: 'tag-5',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.5995958376378325 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-4' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false
 // getBeforeUpdateTableTags needToRefresh true
 // getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:48+08:00|8Q88uv
+// getRefreshTable tableName tabA timeTag tag-6
 // recvData {
 //   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:48+08:00|8Q88uv',
+//   timeTag: 'tag-6',
 //   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.45049512863192986 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
-//   ]
-// }
-// getAfterUpdateTableTags needToRefresh false
-// getBeforeUpdateTableTags needToRefresh true
-// getRefreshState needToRefresh true
-// getRefreshTable tableName tabA timeTag 2022-03-02T17:05:51+08:00|1k3U1P
-// recvData {
-//   tableName: 'tabA',
-//   timeTag: '2022-03-02T17:05:51+08:00|1k3U1P',
-//   data: [
-//     { id: 'id-tabA-peter', name: 'peter', value: 0.07134333448641317 },
-//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },    { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
+//     { id: 'id-tabA-peter', name: 'peter', value: 'value-5' },
+//     { id: 'id-tabA-rosemary', name: 'rosemary', value: 123.456 },
+//     { id: 'id-tabA-kettle', name: 'kettle', value: 456 }
 //   ]
 // }
 // getAfterUpdateTableTags needToRefresh false

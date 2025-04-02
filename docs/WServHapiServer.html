@@ -80,7 +80,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line187">line 187</a>
+        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line228">line 228</a>
     </li></ul></dd>
     
 
@@ -127,7 +127,7 @@
 
     <h5 class="h5-examples">Example</h5>
     
-    <pre class="prettyprint"><code>import fs from 'fs'import _ from 'lodash-es'import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs'import WServHapiServer from './src/WServHapiServer.mjs'async function run() {    //optWOrm    let optWOrm = {        url: 'mongodb://username:password@127.0.0.1:27017',        db: 'servhapi',        cl: '',    }    //tableNamesExec, tableNamesSync    let tableNamesExec = ['tabA', 'tabB']    let tableNamesSync = ['tabA']    //kpOrm    let kpOrm = {}    for (let k in tableNamesExec) {        let v = tableNamesExec[k]        let opt = { ...optWOrm, cl: v }        let wo = new WOrm(opt)        kpOrm[v] = wo    }    async function saveData(cl, r) {        //w        let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件        //save        await w.save(r) //autoInsert: false            .then(function(msg) {                console.log('save then', cl, msg)            })            .catch(function(msg) {                console.log('save catch', cl, msg)            })    }    let r    r = [        {            id: 'id-tabA-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabA-rosemary',            name: 'rosemary',            value: 123.456,        },        {            id: 'id-tabA-kettle',            name: 'kettle',            value: 456,        },    ]    await saveData('tabA', r)    r = [        {            id: 'id-tabB-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabB-rosemary',            name: 'rosemary',            value: 123.456,        },    ]    await saveData('tabB', r)    let n = 0    let tn = setInterval(() => {        n++        console.log('update tabA', n)        r = {            id: 'id-tabA-peter',            name: 'peter',            value: Math.random(),        }        saveData('tabA', r)        if (n >= 5) {            clearInterval(tn)        }    }, 3000)    let procCommon = async (userId, tableName, methodName, input) => {        // console.log('procCommon call', tableName, methodName, input)        let r = await kpOrm[tableName][methodName](input)        // console.log('procCommon result', r)        return r    }    let uploadFile = async (userId, { name, u8a }) => {        console.log('uploadFile', userId, name, _.size(u8a))        // fs.writeFileSync(name, Buffer.from(u8a))        console.log('uploadFile writeFileSync finish')        return 'finish'    }    //WServHapiServer    let instWServHapiServer = new WServHapiServer({        port: 8080,        apis: [],        getUserIdByToken: async (token) => { //可使用async或sync函數            return 'id-for-admin'        },        useDbOrm: true,        kpOrm,        operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input        tableNamesExec,        methodsExec: ['select', 'insert', 'save', 'del'],        tableNamesSync,        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數            uploadFile,            // getUserFromID,            // downloadFileFromID,            // saveTableAndData,            //...        },        // fnTableTags: 'tableTags-serv-hapi.json',    })    instWServHapiServer.on('error', (err) => {        console.log(err)    })}run()// save then tabA [//     { n: 1, nModified: 1, ok: 1 },//     { n: 1, nModified: 1, ok: 1 },//     { n: 1, nModified: 1, ok: 1 }// ]// save then tabB [ { n: 1, nModified: 1, ok: 1 }, { n: 1, nModified: 1, ok: 1 } ]// Server running at: http://localhost:8080// Server[port:8080]: open// update tabA// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// repeat...</code></pre>
+    <pre class="prettyprint"><code>import fs from 'fs'import _ from 'lodash-es'// import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORMimport WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORMimport WServHapiServer from './src/WServHapiServer.mjs'async function run() {    //預先刪除w-orm-lowdb資料庫    try {        fs.unlinkSync('./db.json')    }    catch (err) {}    //optWOrm    let optWOrm = {        // url: 'mongodb://username:password@127.0.0.1:27017',        // db: 'servhapi',        url: './db.json',        db: 'servhapi',        cl: '',    }    //tableNamesExec, tableNamesSync    let tableNamesExec = ['tabA', 'tabB']    let tableNamesSync = ['tabA']    //kpOrm    let kpOrm = {}    for (let k in tableNamesExec) {        let v = tableNamesExec[k]        let opt = { ...optWOrm, cl: v }        let wo = new WOrm(opt)        kpOrm[v] = wo    }    async function saveData(cl, r) {        //w        let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件        //save        await w.save(r) //autoInsert: false            .then(function(msg) {                console.log('save then', cl, msg)            })            .catch(function(msg) {                console.log('save catch', cl, msg)            })    }    let r    r = [        {            id: 'id-tabA-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabA-rosemary',            name: 'rosemary',            value: 123.456,        },        {            id: 'id-tabA-kettle',            name: 'kettle',            value: 456,        },    ]    await saveData('tabA', r)    r = [        {            id: 'id-tabB-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabB-rosemary',            name: 'rosemary',            value: 123.456,        },    ]    await saveData('tabB', r)    let ntv = 0    let genValue = () => {        ntv++        return `value-${ntv}`    }    let n = 0    let tn = setInterval(() => {        n++        console.log('update tabA', n)        r = {            id: 'id-tabA-peter',            name: 'peter',            value: genValue(),        }        saveData('tabA', r)        if (n >= 5) {            clearInterval(tn)        }    }, 3000)    let procCommon = async (userId, tableName, methodName, input) => {        // console.log('procCommon call', tableName, methodName, input)        let r = await kpOrm[tableName][methodName](input)        // console.log('procCommon result', r)        return r    }    let uploadFile = async (userId, { name, u8a }) => {        console.log('uploadFile', userId, name, _.size(u8a))        // fs.writeFileSync(name, Buffer.from(u8a))        console.log('uploadFile writeFileSync finish')        return 'finish'    }    let add = async (userId, { pa, pb }) => {        // console.log('add', userId, pa, pb)        return `result: pa+pb=${pa + pb}`    }    let ntg = 0    let genTag = () => {        ntg++        return `tag-${ntg}`    }    //WServHapiServer    let wsrv = new WServHapiServer({        port: 8080,        apis: [],        verifyConn: ({ apiType, authorization, headers, query }) => {            console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)            return true        },        getUserIdByToken: async (token) => { //可使用async或sync函數            return 'id-for-admin'        },        useDbOrm: true,        kpOrm,        operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input        tableNamesExec,        methodsExec: ['select', 'insert', 'save', 'del'],        tableNamesSync,        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數            uploadFile,            add,            //...        },        // fnTableTags: 'tableTags-serv-hapi.json',        genTag,    })    wsrv.on('error', (err) => {        console.log(err)    })}run()// save then tabA [//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 }// ]// save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]// Server running at: http://DESKTOP-6R7USAO:8080// Server[port:8080]: now clients: 1// uploadFile id-for-admin zdata.b1 3// uploadFile writeFileSync finish// update tabA 1// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 2// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 3// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 4// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 5// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]</code></pre>
 
 
 
@@ -784,6 +784,86 @@
 
         <tr>
             
+                <td class="name"><code>fpTableTags</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'tableTags.json'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入儲存各資料表時間戳檔案路徑串，預設'./tableTags.json'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>genTag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>()=>'{random string}'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入產生不重複識別碼函數，預設()=&gt;'{random string}'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>showLog</code></td>
             
 
@@ -909,7 +989,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.2</a> on Tue Apr 01 2025 21:19:01 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.2</a> on Wed Apr 02 2025 12:07:04 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
