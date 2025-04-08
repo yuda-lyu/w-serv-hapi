@@ -133,7 +133,9 @@ async function run() {
     //WServHapiServer
     let wsrv = new WServHapiServer({
         port: 8080,
+        // apiName: '_api',
         apis: [],
+        // pathStaticFiles: './',
         verifyConn: ({ apiType, authorization, headers, query }) => {
             console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
             return true

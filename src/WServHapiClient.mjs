@@ -305,7 +305,7 @@ function WServHapiClient(opt = {}) {
             showLog = true
         }
 
-        //useWaitToken, 等待有效token
+        //useWaitToken, 等待token
         if (useWaitToken) {
             if (showLog) {
                 console.log('waiting token...')
