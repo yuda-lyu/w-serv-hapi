@@ -25,6 +25,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
  * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
  * @param {Function} [opt.verifyConn=()=>{return true}] 輸入呼叫API時檢測函數，預設()=>{return true}
+ * @param {String} [opt.apiName='api'] 輸入API名稱字串，預設'api'
  * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=>''
  * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
  * @param {Object} [opt.kpOrm={}] 輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}
@@ -268,6 +269,12 @@ function WServHapiServer(opt = {}) {
         }
     }
 
+    //apiName
+    let apiName = get(opt, 'apiName')
+    if (!isestr(apiName)) {
+        apiName = 'api'
+    }
+
     //getUserIdByToken
     let getUserIdByToken = get(opt, 'getUserIdByToken', null)
     // if (!isfun(getUserIdByToken)) {
@@ -405,6 +412,7 @@ function WServHapiServer(opt = {}) {
         instWConverServer = new WConverhpServer({
             serverHapi: server,
             verifyConn,
+            apiName,
         })
         instWConverServer.on('open', function() {
             if (showLog) {
