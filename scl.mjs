@@ -200,4 +200,4 @@ client()
 // getAfterUpdateTableTags needToRefresh false
 
 
-//node --experimental-modules scl.mjs
+//node scl.mjs
