@@ -7,9 +7,12 @@ import isearr from 'wsemi/src/isearr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
 import isestr from 'wsemi/src/isestr.mjs'
+import ispint from 'wsemi/src/ispint.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
 import evem from 'wsemi/src/evem.mjs'
 import waitFun from 'wsemi/src/waitFun.mjs'
+import fsIsFolder from 'wsemi/src/fsIsFolder.mjs'
+import fsCreateFolder from 'wsemi/src/fsCreateFolder.mjs'
 import WConverhpServer from 'w-converhp/src/WConverhpServer.mjs'
 import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
 
@@ -25,6 +28,9 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
  * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
  * @param {String} [opt.apiName='api'] 輸入API名稱字串，預設'api'
+ * @param {String} [opt.pathUploadTemp='./uploadTemp'] 輸入暫時存放切片上傳檔案資料夾字串，預設'./uploadTemp'
+ * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
+ * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024
  * @param {Function} [opt.verifyConn=()=>{return true}] 輸入呼叫API時檢測函數，預設()=>{return true}
  * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=>''
  * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
@@ -267,6 +273,27 @@ function WServHapiServer(opt = {}) {
         apiName = 'api'
     }
 
+    //pathUploadTemp
+    let pathUploadTemp = get(opt, 'pathUploadTemp')
+    if (!isestr(pathUploadTemp)) {
+        pathUploadTemp = './uploadTemp'
+    }
+    if (!fsIsFolder(pathUploadTemp)) {
+        fsCreateFolder(pathUploadTemp)
+    }
+
+    //tokenType
+    let tokenType = get(opt, 'tokenType')
+    if (!isestr(tokenType)) {
+        tokenType = 'Bearer'
+    }
+
+    //sizeSlice
+    let sizeSlice = get(opt, 'sizeSlice')
+    if (!ispint(sizeSlice)) {
+        sizeSlice = 1024 * 1024 //1m
+    }
+
     //verifyConn
     let verifyConn = get(opt, 'verifyConn')
     if (!isfun(verifyConn)) {
@@ -411,8 +438,11 @@ function WServHapiServer(opt = {}) {
         //WConverhpServer
         instWConverServer = new WConverhpServer({
             serverHapi: server,
-            verifyConn,
             apiName,
+            pathUploadTemp,
+            tokenType,
+            sizeSlice,
+            verifyConn,
         })
         instWConverServer.on('open', function() {
             if (showLog) {
