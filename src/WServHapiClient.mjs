@@ -2,6 +2,8 @@ import get from 'lodash-es/get.js'
 import isestr from 'wsemi/src/isestr.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
+import isp0int from 'wsemi/src/isp0int.mjs'
+import ispint from 'wsemi/src/ispint.mjs'
 import ispm from 'wsemi/src/ispm.mjs'
 import isWindow from 'wsemi/src/isWindow.mjs'
 import waitFun from 'wsemi/src/waitFun.mjs'
@@ -20,8 +22,13 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用，預設false
  * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，預設()=>''
  * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
- * @param {Function} opt.getServerMethods 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件
- * @param {Function} opt.recvData 輸入取得變更表資料的回調函數
+ * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024
+ * @param {Integer} [opt.timeout=5*60*1000] 輸入最長等待時間整數，單位ms，預設為5*60*1000、為5分鐘
+ * @param {Integer} [opt.retryMain=3] 輸入主要控制器傳輸失敗重試次數整數，預設為3
+ * @param {Integer} [opt.retryUpload=10] 輸入切片上傳檔案傳輸失敗重試次數整數，預設為10
+ * @param {Integer} [opt.retryDownload=2] 輸入下載檔案傳輸失敗重試次數整數，預設為2
+ * @param {Function} [opt.getServerMethods=()=>{}] 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件，預設()=>{}
+ * @param {Function} [opt.recvData=()=>{}] 輸入取得變更表資料的回調函數，預設()=>{}
  * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
  * @returns {Object} 回傳物件，wcc為w-converhp的瀏覽器事件物件，wsdc為w-serv-webdata的瀏覽器事件物件，可監聽error事件
  * @example
@@ -281,6 +288,36 @@ function WServHapiClient(opt = {}) {
             tokenType = 'Bearer'
         }
 
+        //sizeSlice
+        let sizeSlice = get(opt, 'sizeSlice')
+        if (!ispint(sizeSlice)) {
+            sizeSlice = 1024 * 1024 //1m
+        }
+
+        //timeout
+        let timeout = get(opt, 'timeout')
+        if (!isp0int(timeout)) {
+            timeout = 5 * 60 * 1000 //5min
+        }
+
+        //retryMain
+        let retryMain = get(opt, 'retryMain')
+        if (!isp0int(retryMain)) {
+            retryMain = 3
+        }
+
+        //retryUpload
+        let retryUpload = get(opt, 'retryUpload')
+        if (!isp0int(retryUpload)) {
+            retryUpload = 10
+        }
+
+        //retryDownload
+        let retryDownload = get(opt, 'retryDownload')
+        if (!isp0int(retryDownload)) {
+            retryDownload = 2
+        }
+
         //getServerMethods
         let getServerMethods = get(opt, 'getServerMethods')
         if (!isfun(getServerMethods)) {
@@ -335,6 +372,11 @@ function WServHapiClient(opt = {}) {
             apiName,
             getToken, //token會放於headers內, 供execute與upload使用, 於伺服器verifyConn驗證用
             tokenType,
+            sizeSlice,
+            timeout,
+            retryMain,
+            retryUpload,
+            retryDownload,
         })
 
         //WServWebdataClient

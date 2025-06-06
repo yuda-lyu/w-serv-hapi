@@ -80,7 +80,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="WServHapiClient.mjs.html">WServHapiClient.mjs</a>, <a href="WServHapiClient.mjs.html#line229">line 229</a>
+        <a href="WServHapiClient.mjs.html">WServHapiClient.mjs</a>, <a href="WServHapiClient.mjs.html#line236">line 236</a>
     </li></ul></dd>
     
 
@@ -464,6 +464,206 @@
 
         <tr>
             
+                <td class="name"><code>sizeSlice</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1024*1024</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>timeout</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>5*60*1000</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入最長等待時間整數，單位ms，預設為5<em>60</em>1000、為5分鐘</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryMain</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>3</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入主要控制器傳輸失敗重試次數整數，預設為3</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryUpload</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>10</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入切片上傳檔案傳輸失敗重試次數整數，預設為10</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryDownload</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>2</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入下載檔案傳輸失敗重試次數整數，預設為2</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>getServerMethods</code></td>
             
 
@@ -480,6 +680,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -490,10 +692,12 @@
             
                 <td class="default">
                 
+                    <code>()=>{}</code>
+                
                 </td>
             
 
-            <td class="description last"><p>輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件</p></td>
+            <td class="description last"><p>輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件，預設()=&gt;{}</p></td>
         </tr>
 
     
@@ -516,6 +720,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -526,10 +732,12 @@
             
                 <td class="default">
                 
+                    <code>()=>{}</code>
+                
                 </td>
             
 
-            <td class="description last"><p>輸入取得變更表資料的回調函數</p></td>
+            <td class="description last"><p>輸入取得變更表資料的回調函數，預設()=&gt;{}</p></td>
         </tr>
 
     
@@ -661,7 +869,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.4</a> on Fri Jun 06 2025 10:17:57 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.4</a> on Fri Jun 06 2025 14:19:33 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

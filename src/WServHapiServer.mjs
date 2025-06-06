@@ -443,6 +443,7 @@ function WServHapiServer(opt = {}) {
             tokenType,
             sizeSlice,
             verifyConn,
+            corsOrigins,
         })
         instWConverServer.on('open', function() {
             if (showLog) {
