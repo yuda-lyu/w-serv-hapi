@@ -370,7 +370,7 @@ function WServHapiClient(opt = {}) {
             FormData, //w-converhp的WConverhpClient, 於nodejs使用FormData需安裝套件並提供, 於browser就使用內建FormData故可不用給予
             url,
             apiName,
-            getToken, //token會放於headers內, 供execute與upload使用, 於伺服器verifyConn驗證用
+            getToken, //token會放於headers內, 供execute、upload與download使用, 於伺服器verifyConn驗證用
             tokenType,
             sizeSlice,
             timeout,
