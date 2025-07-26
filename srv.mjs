@@ -136,7 +136,7 @@ async function run() {
         // apiName: '_api',
         apis: [],
         // pathStaticFiles: './',
-        verifyConn: ({ apiType, authorization, headers, query }) => {
+        verifyConn: ({ apiType, authorization, query, headers, req }) => {
             console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
             return true
         },

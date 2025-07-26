@@ -181,7 +181,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     let wsrv = new WServHapiServer({
  *         port: 8080,
  *         apis: [],
- *         verifyConn: ({ apiType, authorization, headers, query }) => {
+ *         verifyConn: ({ apiType, authorization, query, headers, req }) => {
  *             console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)
  *             return true
  *         },
