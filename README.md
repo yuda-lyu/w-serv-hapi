@@ -17,6 +17,7 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 * `w-serv-hapi-client`: for nodejs and browser client
 
 ## Installation
+
 ### Using npm(ES6 module):
 ```alias
 npm i w-serv-hapi
@@ -415,9 +416,8 @@ client()
 ```
 
 ### In a browser(UMD module):
-> **Note:** `w-serv-hapi-client` does't depend on any package.
 
-[Necessary] Add script for w-serv-hapi-client.
+Add script for w-serv-hapi-client.
 ```alias
 <script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.69/dist/w-serv-hapi-client.umd.js"></script>
 ```
