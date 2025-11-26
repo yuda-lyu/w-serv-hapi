@@ -8,7 +8,9 @@ import isbol from 'wsemi/src/isbol.mjs'
 import isint from 'wsemi/src/isint.mjs'
 import isestr from 'wsemi/src/isestr.mjs'
 import ispint from 'wsemi/src/ispint.mjs'
+import isp0int from 'wsemi/src/isp0int.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
+import cint from 'wsemi/src/cint.mjs'
 import evem from 'wsemi/src/evem.mjs'
 import waitFun from 'wsemi/src/waitFun.mjs'
 import fsIsFolder from 'wsemi/src/fsIsFolder.mjs'
@@ -24,6 +26,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Object} [opt={}] 輸入設定物件，預設{}
  * @param {Integer} [opt.port=8080] 輸入Hapi伺服器通訊port，預設8080
  * @param {Array} [opt.corsOrigins=['http://localhost']] 輸入允許跨域呼叫之網域陣列，給予['*']代表允許外部任意網域跨域，預設['http://localhost']
+ * @param {Integer} [opt.delayForSlice=100] 輸入切片上傳檔案API用延遲響應時間，單位ms，預設100
  * @param {Boolean} [opt.useInert=true] 輸入是否使用@hapi/inert取得指定資料夾下所有靜態檔案，預設true
  * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
  * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
@@ -249,6 +252,13 @@ function WServHapiServer(opt = {}) {
         corsOrigins = ['http://localhost'] //['*']
     }
 
+    //delayForSlice
+    let delayForSlice = get(opt, 'delayForSlice', '')
+    if (!isp0int(delayForSlice)) {
+        delayForSlice = 100
+    }
+    delayForSlice = cint(delayForSlice)
+
     //useInert
     let useInert = get(opt, 'useInert')
     if (!isbol(useInert)) {
@@ -444,6 +454,7 @@ function WServHapiServer(opt = {}) {
             sizeSlice,
             verifyConn,
             corsOrigins,
+            delayForSlice,
         })
         instWConverServer.on('open', function() {
             if (showLog) {
