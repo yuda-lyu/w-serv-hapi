@@ -1,13 +1,13 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.0.71",
+  "version": "1.0.72",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
     "form-data": "^4.0.5",
     "lodash-es": "^4.17.21",
-    "w-converhp": "^2.0.71",
-    "w-serv-webdata": "^1.0.88",
-    "wsemi": "^1.8.34"
+    "w-converhp": "^2.0.72",
+    "w-serv-webdata": "^1.0.89",
+    "wsemi": "^1.8.38"
   },
   "devDependencies": {
     "w-orm-lowdb": "^1.0.6",
