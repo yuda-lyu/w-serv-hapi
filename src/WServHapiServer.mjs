@@ -34,6 +34,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {String} [opt.pathUploadTemp='./uploadTemp'] 輸入暫時存放切片上傳檔案資料夾字串，預設'./uploadTemp'
  * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
  * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024
+ * @param {Integer} [opt.sizeMsg=100*1024*1024] 輸入單次請求本體大小上限整數，單位為Byte，預設為100*1024*1024。適用於除切片上傳外之各API，超過上限會回應413，大檔案請改用切片上傳
  * @param {Function} [opt.verifyConn=()=>{return true}] 輸入呼叫API時檢測函數，預設()=>{return true}
  * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=>''
  * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
@@ -45,7 +46,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
  * @param {String} [opt.fpTableTags='tableTags.json'] 輸入儲存各資料表時間戳檔案路徑串，預設'./tableTags.json'
  * @param {Function} [opt.genTag=()=>'{random string}'] 輸入產生不重複識別碼函數，預設()=>'{random string}'
- * @param {Boolean} [opt.showLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
+ * @param {Boolean} [opt.useShowLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
  * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，提供getInstWConverServer回傳擴展功能實體，可監聽error事件
  * @example
  *
@@ -202,7 +203,7 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *             add,
  *             //...
  *         },
- *         // fnTableTags: 'tableTags-serv-hapi.json',
+ *         // fpTableTags: 'tableTags-serv-hapi.json',
  *         genTag,
  *     })
  *
@@ -304,6 +305,12 @@ function WServHapiServer(opt = {}) {
         sizeSlice = 1024 * 1024 //1m
     }
 
+    //sizeMsg
+    let sizeMsg = get(opt, 'sizeMsg')
+    if (!ispint(sizeMsg)) {
+        sizeMsg = 100 * 1024 * 1024 //100m
+    }
+
     //verifyConn
     let verifyConn = get(opt, 'verifyConn')
     if (!isfun(verifyConn)) {
@@ -363,8 +370,11 @@ function WServHapiServer(opt = {}) {
     //kpFunExt
     let kpFunExt = get(opt, 'kpFunExt', null)
 
-    //fnTableTags
-    let fnTableTags = get(opt, 'fnTableTags', null)
+    //fpTableTags, 相容舊名fnTableTags(w-serv-webdata只讀fpTableTags, 舊名傳下去等同未給而恆取其預設值)
+    let fpTableTags = get(opt, 'fpTableTags', null)
+    if (!isestr(fpTableTags)) {
+        fpTableTags = get(opt, 'fnTableTags', null)
+    }
 
     //genTag
     let genTag = get(opt, 'genTag')
@@ -374,10 +384,10 @@ function WServHapiServer(opt = {}) {
         }
     }
 
-    //showLog
-    let showLog = get(opt, 'showLog')
-    if (!isbol(showLog)) {
-        showLog = true
+    //useShowLog
+    let useShowLog = get(opt, 'useShowLog')
+    if (!isbol(useShowLog)) {
+        useShowLog = true
     }
 
     //createHapiServer
@@ -394,6 +404,10 @@ function WServHapiServer(opt = {}) {
                 cors: {
                     origin: corsOrigins, //Access-Control-Allow-Origin
                     credentials: false, //Access-Control-Allow-Credentials
+                    //additionalExposedHeaders, w-converhp之回應協定除本體外另靠此四個標頭傳成敗(Return-Type/Return-Msg)、可否重試(Return-Retryable)與檔名(Content-Disposition),
+                    //瀏覽器對跨來源回應只讓JS讀Access-Control-Expose-Headers列出者, 未列則client讀到空字串而使download整條失效;
+                    //本套件以serverHapi將此伺服器交予WConverhpServer, 依其契約須由外部提供者自行設定, 用additional以保留hapi預設兩項
+                    additionalExposedHeaders: ['Return-Type', 'Return-Msg', 'Return-Retryable', 'Content-Disposition'],
                 },
             },
         })
@@ -452,44 +466,17 @@ function WServHapiServer(opt = {}) {
             pathUploadTemp,
             tokenType,
             sizeSlice,
+            sizeMsg,
             verifyConn,
             corsOrigins,
             delayForSlice,
         })
-        instWConverServer.on('open', function() {
-            if (showLog) {
-                console.log(`Server[port:${port}]: open`)
-            }
-
-            // //broadcast
-            // let n = 0
-            // setInterval(() => {
-            //     n += 1
-            //     let o = {
-            //         text: `server broadcast hi(${n})`,
-            //         data: new Uint8Array([66, 97, 115]), //support Uint8Array data
-            //     }
-            //     instWConverServer.broadcast(o, function (prog) {
-            //         console.log('broadcast prog', prog)
-            //     })
-            // }, 1000)
-
-        })
-        // instWConverServer.on('clientEnter', function(clientId, data) {
-        //     console.log(`Server[port:${port}]: client enter: ${clientId}`)
-        // })
+        //clientChange, 由w-serv-broadcast於同一事件物件派發(w-converhp本身僅派發execute、upload、download、handler、error)
         instWConverServer.on('clientChange', function(num) {
-            if (showLog) {
+            if (useShowLog) {
                 console.log(`Server[port:${port}]: now clients: ${num}`)
             }
         })
-        // instWConverServer.on('execute', async function(func, input, pm) {
-        //     //console.log(`Server[port:${port}]: execute`, func, input)
-        //     execute({ func, input, pm })
-        // })
-        // instWConverServer.on('broadcast', function(data) {
-        //     console.log(`Server[port:${port}]: broadcast`, data)
-        // })
 
     }
 
@@ -529,7 +516,7 @@ function WServHapiServer(opt = {}) {
                 //     // downloadAnalysisResultByKey,
                 // },
 
-                fnTableTags,
+                fpTableTags,
                 genTag,
 
             })
@@ -555,7 +542,7 @@ function WServHapiServer(opt = {}) {
 
         //start
         await server.start()
-        if (showLog) {
+        if (useShowLog) {
             console.log(`Server running at: ${server.info.uri}`)
         }
 

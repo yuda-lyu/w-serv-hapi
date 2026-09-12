@@ -216,14 +216,12 @@ run()
 > **Link:** [[dev source code](https://github.com/yuda-lyu/w-serv-hapi/blob/master/scl.mjs)]
 ```alias
 // import fs from 'fs'
-import FormData from 'form-data'
 import WServHapiClient from './src/WServHapiClient.mjs'
 
 async function client() {
 
     //WServHapiClient
     let instWServHapiClient = new WServHapiClient({
-        FormData,
         url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {
@@ -419,7 +417,7 @@ client()
 
 Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.86/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.0.87/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
@@ -432,7 +430,6 @@ async function client() {
     //WServHapiClient
     let WServHapiClient = window['w-serv-hapi-client']
     let wshc = new WServHapiClient({
-        // FormData,
         url: 'http://localhost:8080',
         useWaitToken: false,
         getToken: () => {

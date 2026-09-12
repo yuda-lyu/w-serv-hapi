@@ -17,7 +17,6 @@ rollupFiles({
         'fs': 'fs',
         'events': 'events',
         'stream': 'stream',
-        // 'form-data': 'FormData',
     },
     external: [
         '@hapi/hapi',
@@ -26,7 +25,6 @@ rollupFiles({
         'fs',
         'events',
         'stream',
-        // 'form-data',
     ],
 })
 

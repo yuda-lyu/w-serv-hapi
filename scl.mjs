@@ -1,5 +1,4 @@
 // import fs from 'fs'
-import FormData from 'form-data'
 import WServHapiClient from './src/WServHapiClient.mjs'
 
 
@@ -7,7 +6,6 @@ async function client() {
 
     //WServHapiClient
     let instWServHapiClient = new WServHapiClient({
-        FormData,
         url: 'http://localhost:8080',
         // apiName: '_api',
         useWaitToken: false,
