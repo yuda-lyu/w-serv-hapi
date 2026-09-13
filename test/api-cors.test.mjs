@@ -1,5 +1,8 @@
 import assert from 'assert'
 import { startServer } from './api-setup.mjs'
+import wPorts from './tools/ports.mjs'
+
+let { portOf } = wPorts
 
 
 /**
@@ -10,9 +13,9 @@ import { startServer } from './api-setup.mjs'
  * Return-Type、Return-Msg、Return-Retryable、Content-Disposition，否則前端(browser)與API不同源時download會失效」
  */
 describe('api-cors', function() {
-    let port = 8172
+    let port = portOf('api-cors')
     let srv = null
-    let corsOrigins = ['http://localhost:3000']
+    let corsOrigins = ['http://some-site.com']
 
     before(async function() {
         srv = await startServer({

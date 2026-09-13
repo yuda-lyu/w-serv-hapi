@@ -1,6 +1,9 @@
 import assert from 'assert'
 import fs from 'fs'
 import { waitFor, startServer } from './api-setup.mjs'
+import wPorts from './tools/ports.mjs'
+
+let { portOf } = wPorts
 
 
 /**
@@ -12,10 +15,9 @@ import { waitFor, startServer } from './api-setup.mjs'
 describe('api-table-tags', function() {
 
     it('fpTableTags所指定之路徑應為時間戳落檔位置', async function() {
-        let port = 8173
         let srv = await startServer({
             name: 'table-tags-fp',
-            port,
+            port: portOf('api-table-tags', 0),
             seed: {
                 tabA: [{ id: 'id-tabA-peter', name: 'peter', value: 123 }],
             },
@@ -40,11 +42,10 @@ describe('api-table-tags', function() {
     })
 
     it('舊名fnTableTags應相容而指向同一落點', async function() {
-        let port = 8174
         let fd = './tmp/test-table-tags-fn'
         let srv = await startServer({
             name: 'table-tags-fn',
-            port,
+            port: portOf('api-table-tags', 1),
             seed: {
                 tabA: [{ id: 'id-tabA-peter', name: 'peter', value: 123 }],
             },

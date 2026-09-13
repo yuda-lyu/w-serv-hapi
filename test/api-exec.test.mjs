@@ -1,6 +1,9 @@
 import assert from 'assert'
 import size from 'lodash-es/size.js'
 import { waitFor, startServer, startClient } from './api-setup.mjs'
+import wPorts from './tools/ports.mjs'
+
+let { portOf } = wPorts
 
 
 /**
@@ -10,7 +13,7 @@ import { waitFor, startServer, startClient } from './api-setup.mjs'
  * 與WServHapiClient之opt.getServerMethods、opt.recvData
  */
 describe('api-exec', function() {
-    let port = 8171
+    let port = portOf('api-exec')
     let srv = null
     let cli = null
     let methods = null
@@ -49,7 +52,7 @@ describe('api-exec', function() {
             },
         })
 
-        cli = startClient({ port })
+        cli = startClient({ port: srv.port })
         methods = await cli.methods
 
     })

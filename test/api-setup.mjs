@@ -77,17 +77,22 @@ function deferred() {
  *
  * @param {Object} opt 輸入設定物件
  * @param {String} opt.name 輸入測試名稱字串, 供暫存資料夾命名
- * @param {Integer} opt.port 輸入伺服器port整數
+ * @param {Integer} opt.port 輸入伺服器port整數, 須由test/tools/ports.mjs之portOf取得
  * @param {Array} [opt.tableNamesExec=['tabA','tabB']] 輸入可操作表名陣列
  * @param {Array} [opt.tableNamesSync=['tabA']] 輸入可同步表名陣列
  * @param {Object} [opt.seed={}] 輸入各表初始資料物件, key為表名而值為資料陣列
  * @param {Object} [opt.kpFunExt={}] 輸入擴充函數物件
  * @param {Object} [opt.optServer={}] 輸入覆寫WServHapiServer設定之物件
- * @returns {Promise} 回傳Promise, resolve為物件, 內含wsrv、kpOrm、fd、errors、stop
+ * @returns {Promise} 回傳Promise, resolve為物件, 內含wsrv、port、kpOrm、fd、errors、stop
  */
 async function startServer(opt) {
     let name = opt.name
+
+    //port, 一律由test/tools/ports.mjs集中配發; 缺漏即拋錯, 不靜默回落到套件預設值而與他檔撞號
     let port = opt.port
+    if (!Number.isInteger(port) || port <= 0) {
+        throw new Error('startServer: 須以test/tools/ports.mjs之portOf給予port')
+    }
     let tableNamesExec = opt.tableNamesExec || ['tabA', 'tabB']
     let tableNamesSync = opt.tableNamesSync || ['tabA']
     let seed = opt.seed || {}
@@ -158,12 +163,23 @@ async function startServer(opt) {
         return server.info.started > 0
     }, { msg: `server[port:${port}] start timeout` })
 
+    //check, 須確實綁在所配發之port上
+    if (server.info.port !== port) {
+        throw new Error(`startServer: 實際port[${server.info.port}]與所配發之port[${port}]不符`)
+    }
+
     //stop
+    //why 須clearBroadcast: w-serv-broadcast於伺服端有1秒之輪詢timer, 不清除則行程不會自行結束,
+    //而package.json之test script依全域規範不帶--exit, mocha跑完會等不到行程退出
     let stop = async () => {
+        let inst = await wsrv.getInstWConverServer()
+        if (typeof inst.clearBroadcast === 'function') {
+            inst.clearBroadcast()
+        }
         await server.stop()
     }
 
-    return { wsrv, kpOrm, fd, errors, stop }
+    return { wsrv, port, kpOrm, fd, errors, stop }
 }
 
 
