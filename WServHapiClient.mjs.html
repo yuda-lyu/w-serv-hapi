@@ -49,10 +49,8 @@
 import isestr from 'wsemi/src/isestr.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
-import isp0int from 'wsemi/src/isp0int.mjs'
-import ispint from 'wsemi/src/ispint.mjs'
 import ispm from 'wsemi/src/ispm.mjs'
-import waitFun from 'wsemi/src/waitFun.mjs'
+import evEmit from 'wsemi/src/evEmit.mjs'
 import WConverhpClient from 'w-converhp/src/WConverhpClient.mjs'
 import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
 
@@ -62,24 +60,24 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *
  * @class
  * @param {Object} [opt={}] 輸入設定物件，預設{}
- * @param {String} [opt.url='http://localhost:8080'] 輸入伺服器接口網址，前端常用window.location.origin+window.location.pathname，預設為'http://localhost:8080'
- * @param {String} [opt.apiName='api'] 輸入API名稱字串，預設'api'
- * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用，預設false
- * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，預設()=>''
- * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
- * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024
- * @param {Integer} [opt.timeout=5*60*1000] 輸入最長等待時間整數，單位ms，預設為5*60*1000、為5分鐘
- * @param {Integer} [opt.retryMain=3] 輸入主要控制器傳輸失敗重試次數整數，預設為3
- * @param {Integer} [opt.retryUpload=10] 輸入切片上傳檔案傳輸失敗重試次數整數，預設為10
- * @param {Integer} [opt.retryDownload=2] 輸入下載檔案傳輸失敗重試次數整數，預設為2
- * @param {Function} [opt.getServerMethods=()=>{}] 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件，預設()=>{}
- * @param {Function} [opt.recvData=()=>{}] 輸入取得變更表資料的回調函數，預設()=>{}
+ * @param {String} [opt.url='http://localhost:8080'] 輸入伺服器接口網址，原樣轉傳w-converhp，前端常用window.location.origin+window.location.pathname，預設為'http://localhost:8080'
+ * @param {String} [opt.apiName='api'] 輸入API名稱字串，原樣轉傳w-converhp，預設'api'
+ * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用。給予true時getToken為必填，未給時建構即同步拋錯。建構後每100ms呼叫getToken，待其回傳非空字串(可為promise)才建立資料同步(開始輪詢、取得函數清單與同步表資料)，不設等待上限，前一次呼叫回傳之promise未結束前不再呼叫；等待期間呼叫回傳物件之clearBroadcast或clearSync即取消等待，其後不再建立資料同步；getToken拋錯或reject時發出一則error事件(內容為其拋出值)並停止等待。非布林值視為false，預設false
+ * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，可使用sync或async函數，轉交w-converhp(放於請求之headers，供伺服器verifyConn驗證)與w-serv-webdata(放於數據內，供伺服器getUserIdByToken取得使用者id)。未給(undefined或null)時取預設；有給但非函數時建構即同步拋錯，預設()=>''
+ * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，原樣轉傳w-converhp，預設'Bearer'
+ * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，原樣轉傳w-converhp，須與伺服器端之sizeSlice一致，預設為1024*1024
+ * @param {Integer} [opt.timeout=5*60*1000] 輸入最長等待時間整數，單位ms，原樣轉傳w-converhp，預設為5*60*1000、為5分鐘
+ * @param {Integer} [opt.retryMain=3] 輸入主要控制器傳輸失敗重試次數整數，原樣轉傳w-converhp，預設為3
+ * @param {Integer} [opt.retryUpload=10] 輸入切片上傳檔案傳輸失敗重試次數整數，原樣轉傳w-converhp，預設為10
+ * @param {Integer} [opt.retryDownload=2] 輸入下載檔案傳輸失敗重試次數整數，原樣轉傳w-converhp，預設為2
+ * @param {Function} [opt.getServerMethods=()=>{}] 輸入提供操作物件的回調函數，前後端通訊先取得可呼叫函數清單，映射完之後，後端函數都將放入物件當中，key為函數名而值為函數，並通過回調函數提供該物件。未給(undefined或null)時取預設；有給但非函數時建構即同步拋錯，預設()=>{}
+ * @param {Function} [opt.recvData=()=>{}] 輸入取得變更表資料的回調函數。某表取資料失敗(例如同步表之表操作select被授權拒絕、傳輸失敗)時不呼叫，該表既有資料維持不變，改發出error事件(內容為{msg,err,tableName,timeTag}，err為原拒絕值)，之後再收到該表之時間戳時重抓。未給(undefined或null)時取預設；有給但非函數時建構即同步拋錯，預設()=>{}
  * @param {Function} [opt.getRefreshState=null] 輸入取得是否需更新狀態的回調函數，傳入參數為{needToRefresh}，預設null
  * @param {Function} [opt.getRefreshTable=null] 輸入取得資料表時間戳有變更通知的回調函數，傳入參數為{tableName,timeTag}，預設null
  * @param {Function} [opt.getBeforeUpdateTableTags=null] 輸入更新各資料表時間戳前的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null
- * @param {Function} [opt.getAfterUpdateTableTags=null] 輸入更新各資料表時間戳後的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null
+ * @param {Function} [opt.getAfterUpdateTableTags=null] 輸入更新各資料表時間戳後的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null。上述四個回調函數原樣轉傳w-serv-webdata，有給但非函數時建構即同步拋錯(不論useWaitToken)
  * @param {Boolean} [opt.useShowLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
- * @returns {Object} 回傳事件物件，為w-converhp之瀏覽器端事件物件經w-serv-webdata擴充後之同一物件，可監聽error事件
+ * @returns {Object} 回傳事件物件，為w-converhp之瀏覽器端事件物件，建立資料同步時由w-serv-webdata於同一物件上擴充，建構後即可使用(useWaitToken=true而尚在等待token時亦然)。可監聽error事件，本套件、w-converhp與w-serv-webdata各層之error皆於其上發出，內容依來源層而異：w-converhp為每次請求嘗試失敗之訊息字串，w-serv-broadcast為{msg,err}，w-sync-webdata為{msg,err,tableName,timeTag}或{msg,err}，本套件為getToken之拋出值；本套件自發之error(等待token期間getToken之拋錯)於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時，本套件與w-serv-broadcast、w-sync-webdata之error改以console.error輸出，w-converhp與w-serv-webdata之error不輸出；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)。設定錯誤(例如useWaitToken=true而未給getToken、回調函數有給但非函數)於建構時同步拋出；執行環境須具AbortController(停止時中止在途請求所需)，缺者useWaitToken=false時於建構時同步拋出，true時於取得token後發出error事件且不建立資料同步。停止時呼叫其clearBroadcast與clearSync，兩者皆須呼叫(只呼叫clearSync時輪詢照常進行，Node行程不會結束；只呼叫clearBroadcast時資料同步之下層照常運作，停止時在途之同步表請求被中止而由其發出一則帶表名之error)，建立資料同步後兩者為w-serv-webdata所提供；等待token期間呼叫任一者即取消等待，於等待期間取得之函數參照於建立資料同步後呼叫亦轉為w-serv-webdata之同名函數；皆可重複呼叫。兩者皆呼叫後不再送出本套件與下層自身之請求(輪詢、取得函數清單、時間戳與同步表資料)，停止時在途者一併中止：不再重試、不再發出其各次嘗試失敗之error、不再為其呼叫getToken，亦不再撐住Node行程(各層之條件：w-converhp 2.1.8、w-serv-broadcast 1.1.9、w-serv-webdata 1.1.12以上，本套件之相依已滿足；dist以建置時內嵌之版本為準)；伺服器已開始之處理照常完成而其結果忽略。停止為終態，不再恢復輪詢；使用端經getServerMethods所取得之函數於停止後仍可呼叫，且其呼叫與直接呼叫本物件之execute、upload、download者皆不受停止影響：照常完成或依retryMain等之重試後失敗，其間各次嘗試失敗之error仍於本物件發出；其中upload於合併階段之輪詢依w-converhp之設計持續至伺服器端應用接受為止，兩端皆停止後即無上界(error不止、promise懸置、Node行程不結束)，故execute、upload、download宜自帶opt.signal(例如AbortSignal.timeout)以便中止(見w-converhp)。建立資料同步後token失效(例如登出)不會回到等待，輪詢與請求持續失敗並發出error，請停止後另建新實體等待。宜先停止前端再停止伺服器：先停伺服器時，前端於停止前之輪詢失敗皆發出error事件。useShowLog只控制本套件自身之輸出，下層之輸出(例如w-converhp之重試訊息)不受其控制。回傳物件上下層所掛之其他函數(例如updateTableTags、pollingTableTags)非本套件之契約
  * @example
  *
  * // import fs from 'fs'
@@ -164,6 +162,10 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *     instWServHapiClient.on('error', (err) => {
  *         console.log(err)
  *     })
+ *
+ *     //停止(例如登出時): clearBroadcast與clearSync兩者皆須呼叫, 之後再停止伺服器
+ *     // instWServHapiClient.clearBroadcast()
+ *     // instWServHapiClient.clearSync()
  *
  * }
  * client()
@@ -281,176 +283,158 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  *
  */
 function WServHapiClient(opt = {}) {
-    let instWConverClient = null
 
-    async function core() {
-
-        //url
-        let url = get(opt, 'url')
-        if (!isestr(url)) {
-            url = 'http://localhost:8080'
-        }
-
-        //apiName
-        let apiName = get(opt, 'apiName')
-        if (!isestr(apiName)) {
-            apiName = 'api'
-        }
-
-        //useWaitToken
-        let useWaitToken = get(opt, 'useWaitToken', null)
-        if (!isbol(useWaitToken)) {
-            useWaitToken = false
-        }
-
-        //getToken
-        let getToken = get(opt, 'getToken')
-        if (!isfun(getToken)) {
-            if (useWaitToken) {
-                throw new Error('invalid opt.getToken when opt.useWaitToken=true')
-            }
-            getToken = () => {
-                return ''
-            }
-        }
-
-        //tokenType
-        let tokenType = get(opt, 'tokenType')
-        if (!isestr(tokenType)) {
-            tokenType = 'Bearer'
-        }
-
-        //sizeSlice
-        let sizeSlice = get(opt, 'sizeSlice')
-        if (!ispint(sizeSlice)) {
-            sizeSlice = 1024 * 1024 //1m
-        }
-
-        //timeout
-        let timeout = get(opt, 'timeout')
-        if (!isp0int(timeout)) {
-            timeout = 5 * 60 * 1000 //5min
-        }
-
-        //retryMain
-        let retryMain = get(opt, 'retryMain')
-        if (!isp0int(retryMain)) {
-            retryMain = 3
-        }
-
-        //retryUpload
-        let retryUpload = get(opt, 'retryUpload')
-        if (!isp0int(retryUpload)) {
-            retryUpload = 10
-        }
-
-        //retryDownload
-        let retryDownload = get(opt, 'retryDownload')
-        if (!isp0int(retryDownload)) {
-            retryDownload = 2
-        }
-
-        //getServerMethods
-        let getServerMethods = get(opt, 'getServerMethods')
-        if (!isfun(getServerMethods)) {
-            getServerMethods = () => { }
-        }
-
-        //recvData
-        let recvData = get(opt, 'recvData')
-        if (!isfun(recvData)) {
-            recvData = () => { }
-        }
-
-        //getRefreshState, getRefreshTable, getBeforeUpdateTableTags, getAfterUpdateTableTags
-        let getRefreshState = get(opt, 'getRefreshState')
-        let getRefreshTable = get(opt, 'getRefreshTable')
-        let getBeforeUpdateTableTags = get(opt, 'getBeforeUpdateTableTags')
-        let getAfterUpdateTableTags = get(opt, 'getAfterUpdateTableTags')
-
-        //useShowLog
-        let useShowLog = get(opt, 'useShowLog')
-        if (!isbol(useShowLog)) {
-            useShowLog = true
-        }
-
-        //useWaitToken, 等待token
-        if (useWaitToken) {
-            if (useShowLog) {
-                console.log('waiting token...')
-            }
-
-            //waitFun
-            await waitFun(async () => {
-
-                //getToken
-                let token = getToken()
-                if (ispm(token)) {
-                    token = await token
-                }
-
-                return isestr(token)
-            }, { timeInterval: 100 })
-
-            if (useShowLog) {
-                console.log('get token')
-            }
-        }
-
-        //WConverhpClient
-        instWConverClient = new WConverhpClient({
-            url,
-            apiName,
-            getToken, //token會放於headers內, 供execute、upload與download使用, 於伺服器verifyConn驗證用
-            tokenType,
-            sizeSlice,
-            timeout,
-            retryMain,
-            retryUpload,
-            retryDownload,
-        })
-
-        //WServWebdataClient
-        instWConverClient = new WServWebdataClient(
-            instWConverClient,
-            {
-
-                // getToken: () => {
-                //     return Vue.prototype.$store.state.userToken
-                // },
-                getToken, //token會放於數據內, 於伺服器再通過getUserIdByToken取得使用者id用
-
-                // getServerMethods: (r) => {
-                //     console.log('$fapi', r)
-                //     Vue.prototype.$fapi = r
-                //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateDriveable, true)
-                // },
-                getServerMethods,
-
-                // recvData: (r) => {
-                //     console.log('recvData', r.tableName, r.data)
-                //     Vue.prototype.$store.commit(Vue.prototype.$store.types.UpdateTableData, r)
-                // },
-                recvData,
-
-                getRefreshState,
-                getRefreshTable,
-                getBeforeUpdateTableTags,
-                getAfterUpdateTableTags,
-            })
-
+    //useWaitToken, 非布林值視為未指定(其預設即不等待), 比照伺服器端之useShowLog
+    let useWaitToken = get(opt, 'useWaitToken')
+    if (!isbol(useWaitToken)) {
+        useWaitToken = false
     }
 
-    //core
-    core()
-        .catch((err) => {
-            try {
-                instWConverClient.emit('error', err)
+    //useShowLog
+    let useShowLog = get(opt, 'useShowLog')
+    if (!isbol(useShowLog)) {
+        useShowLog = true
+    }
+
+    //funOpt, 函數型選項之共同規則: 未給(undefined或null)取預設, 有給但非函數時建構即同步拋錯, 訊息同w-serv-webdata之'invalid opt.X'
+    //why: 原對有給而非函數者靜默改用預設(getToken、getServerMethods、recvData), 或交w-serv-webdata於非同步流程內拋錯而改為error事件(各回調函數);
+    //useWaitToken=true時檢核更晚於回傳, 回傳值為null且失敗處理對null發出error而使行程崩潰
+    let funOpt = (name, def) => {
+        let v = get(opt, name)
+        if (v === undefined || v === null) {
+            return def
+        }
+        if (!isfun(v)) {
+            throw new Error(`invalid opt.${name}`)
+        }
+        return v
+    }
+
+    //getToken, 本套件於等待token時自行呼叫, 另轉交w-converhp(放於headers供verifyConn驗證)與w-serv-webdata(放於數據內供getUserIdByToken取得使用者id)
+    let getToken = funOpt('getToken', null)
+    if (getToken === null) {
+        if (useWaitToken) {
+            throw new Error('invalid opt.getToken when opt.useWaitToken=true')
+        }
+        getToken = () => {
+            return ''
+        }
+    }
+
+    //optWebdata, 交w-serv-webdata之選項整包轉傳(同伺服器端, 下游新增之選項無須本套件逐項列舉); getServerMethods與recvData於w-serv-webdata為必填, 由本套件提供預設
+    //各回調函數(getRefreshState等)之檢核由w-serv-webdata擁有, 於此先以同一規則檢核: useWaitToken=true時w-serv-webdata延後至取得token才建構, 不先檢核則其設定錯誤晚於建構才出現而與false時通道不同
+    //兩處規則之一致由test/unit-client-init.test.mjs以行為比對守住(w-serv-webdata前端於建構時拋錯之選項, 本套件於useWaitToken=true時須同步拋出同一訊息)
+    let optWebdata = {
+        ...opt,
+        getToken,
+        getServerMethods: funOpt('getServerMethods', () => {}),
+        recvData: funOpt('recvData', () => {}),
+    }
+    for (let name of ['getRefreshState', 'getRefreshTable', 'getBeforeUpdateTableTags', 'getAfterUpdateTableTags']) {
+        funOpt(name, null)
+    }
+
+    //instWConverClient, w-converhp前端之事件物件, 其建構不連線亦不起計時器, 故於回傳前即建立: useWaitToken=true而等待token期間亦可監聽error並停止
+    //轉傳選項原樣交w-converhp, 本套件不另訂預設與檢核(同伺服器端, 見CLAUDE_rulebook.md之R1)
+    let instWConverClient = new WConverhpClient({
+        url: get(opt, 'url'),
+        apiName: get(opt, 'apiName'),
+        getToken,
+        tokenType: get(opt, 'tokenType'),
+        sizeSlice: get(opt, 'sizeSlice'),
+        timeout: get(opt, 'timeout'),
+        retryMain: get(opt, 'retryMain'),
+        retryUpload: get(opt, 'retryUpload'),
+        retryDownload: get(opt, 'retryDownload'),
+    })
+
+    //emitError, 本套件自發之error(等待token期間getToken之拋錯)經wsemi之evEmit發出, 監聽器之同步拋錯不使行程崩潰
+    //why: 原於catch內對事件物件emit, 失敗時再拋出而成未處理之rejection, 使Node行程崩潰
+    //無error監聽者時改以console.error輸出, 失敗不可無聲(同w-serv-broadcast、w-sync-webdata; CLAUDE_rulebook.md之R10、R11)
+    let emitError = (err) => {
+        if (instWConverClient.listenerCount('error') === 0) {
+            console.error('[w-serv-hapi]', err)
+            return
+        }
+        evEmit(instWConverClient, 'error', [err], { tag: 'w-serv-hapi' })
+    }
+
+    //startSync, 建立資料同步: w-serv-webdata於同一事件物件上擴充並回傳之(建構時即開始輪詢), 並以其clearBroadcast、clearSync覆寫等待期間之同名函數
+    let started = false
+    let kpClear = {}
+    let startSync = () => {
+        new WServWebdataClient(instWConverClient, optWebdata)
+        started = true
+        kpClear = {
+            clearBroadcast: instWConverClient.clearBroadcast,
+            clearSync: instWConverClient.clearSync,
+        }
+    }
+
+    //clearBroadcast, clearSync, 回傳前即掛上, 使等待token期間亦可停止: 取消等待, 其後不建立資料同步; 已建立者轉呼叫w-serv-webdata所提供之同名函數(供等待期間即取得函數參照者)
+    //名稱沿用w-serv-webdata之clearBroadcast、clearSync(不可命名為stop, 見CLAUDE_rulebook.md之R4)
+    //建立資料同步後轉呼叫之w-serv-webdata包裝, 1.1.12起並中止其自身在途之請求(經w-converhp 2.1.8之opt.signal), w-serv-broadcast 1.1.9起中止在途之輪詢; 本套件不另中止(R12)
+    let cleared = false
+    let tWait = null
+    for (let name of ['clearBroadcast', 'clearSync']) {
+        instWConverClient[name] = () => {
+            cleared = true
+            if (tWait !== null) {
+                clearTimeout(tWait)
+                tWait = null
             }
-            catch (err) {
-                throw new Error(err)
+            if (started &amp;&amp; isfun(kpClear[name])) {
+                kpClear[name]()
             }
-        })
+        }
+    }
+
+    //未等待token: 同步建立資料同步, 建構失敗直接拋給使用端
+    if (!useWaitToken) {
+        startSync()
+        return instWConverClient
+    }
+
+    //checkToken, 等待getToken回傳非空字串後才建立資料同步
+    //不設次數上限: 使用者何時登入不定; 原以wsemi之waitFun等待, 其預設200次(約20秒)即放棄, 其後對null發出error而使行程崩潰
+    //前一次檢查結束後才排下一次, getToken回傳之promise未結束前不重疊呼叫; 首次檢查亦於建構子回傳後才進行, 使其error送達new之後才掛上之監聽
+    //getToken拋錯或reject時發出一則error事件並停止等待(不建立資料同步); 停止後不再發出事件
+    if (useShowLog) {
+        console.log('waiting token...')
+    }
+    let checkToken = async () => {
+        tWait = null
+        let token = ''
+        try {
+            token = getToken()
+            if (ispm(token)) {
+                token = await token
+            }
+        }
+        catch (err) {
+            if (!cleared) {
+                emitError(err)
+            }
+            return
+        }
+        if (cleared) {
+            return
+        }
+        if (!isestr(token)) {
+            tWait = setTimeout(checkToken, 100)
+            return
+        }
+        if (useShowLog) {
+            console.log('get token')
+        }
+        try {
+            startSync()
+        }
+        catch (err) {
+            emitError(err) //設定已於建構時檢核, 此處僅剩非預期之例外
+        }
+    }
+    tWait = setTimeout(checkToken, 0)
 
     return instWConverClient
 }
@@ -471,7 +455,7 @@ export default WServHapiClient
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Oct 11 2026 15:51:21 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Oct 14 2026 02:13:06 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
