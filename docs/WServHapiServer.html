@@ -80,7 +80,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line239">line 239</a>
+        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line248">line 248</a>
     </li></ul></dd>
     
 
@@ -127,7 +127,7 @@
 
     <h5 class="h5-examples">Example</h5>
     
-    <pre class="prettyprint"><code>import fs from 'fs'import _ from 'lodash-es'// import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORMimport WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORMimport WServHapiServer from './src/WServHapiServer.mjs'async function run() {    //預先刪除w-orm-lowdb資料庫    try {        fs.unlinkSync('./db.json')    }    catch (err) {}    //optWOrm    let optWOrm = {        // url: 'mongodb://username:password@127.0.0.1:27017',        // db: 'servhapi',        url: './db.json',        db: 'servhapi',        cl: '',    }    //tableNamesExec, tableNamesSync    let tableNamesExec = ['tabA', 'tabB']    let tableNamesSync = ['tabA']    //kpOrm    let kpOrm = {}    for (let k in tableNamesExec) {        let v = tableNamesExec[k]        let opt = { ...optWOrm, cl: v }        let wo = new WOrm(opt)        kpOrm[v] = wo    }    async function saveData(cl, r) {        //w        let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件        //save        await w.save(r) //autoInsert: false            .then(function(msg) {                console.log('save then', cl, msg)            })            .catch(function(msg) {                console.log('save catch', cl, msg)            })    }    let r    r = [        {            id: 'id-tabA-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabA-rosemary',            name: 'rosemary',            value: 123.456,        },        {            id: 'id-tabA-kettle',            name: 'kettle',            value: 456,        },    ]    await saveData('tabA', r)    r = [        {            id: 'id-tabB-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabB-rosemary',            name: 'rosemary',            value: 123.456,        },    ]    await saveData('tabB', r)    let ntv = 0    let genValue = () => {        ntv++        return `value-${ntv}`    }    let n = 0    let tn = setInterval(() => {        n++        console.log('update tabA', n)        r = {            id: 'id-tabA-peter',            name: 'peter',            value: genValue(),        }        saveData('tabA', r)        if (n >= 5) {            clearInterval(tn)        }    }, 3000)    let procCommon = async (userId, tableName, methodName, input) => {        // console.log('procCommon call', tableName, methodName, input)        let r = await kpOrm[tableName][methodName](input)        // console.log('procCommon result', r)        return r    }    let uploadFile = async (userId, { name, u8a }) => {        console.log('uploadFile', userId, name, _.size(u8a))        // fs.writeFileSync(name, Buffer.from(u8a))        console.log('uploadFile writeFileSync finish')        return 'finish'    }    let add = async (userId, { pa, pb }) => {        // console.log('add', userId, pa, pb)        return `result: pa+pb=${pa + pb}`    }    let ntg = 0    let genTag = () => {        ntg++        return `tag-${ntg}`    }    //WServHapiServer    let wsrv = new WServHapiServer({        port: 8080,        apis: [],        verifyConn: ({ apiType, authorization, query, headers, req }) => {            console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)            return true        },        getUserIdByToken: async (token) => { //可使用async或sync函數            return 'id-for-admin'        },        useDbOrm: true,        kpOrm,        operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input        tableNamesExec,        methodsExec: ['select', 'insert', 'save', 'del'],        tableNamesSync,        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數            uploadFile,            add,            //...        },        // fpTableTags: 'tableTags-serv-hapi.json',        genTag,    })    wsrv.on('error', (err) => {        console.log(err)    })}run()// save then tabA [//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 }// ]// save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]// Server running at: http://DESKTOP-6R7USAO:8080// Server[port:8080]: now clients: 1// uploadFile id-for-admin zdata.b1 3// uploadFile writeFileSync finish// update tabA 1// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 2// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 3// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 4// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 5// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]</code></pre>
+    <pre class="prettyprint"><code>import fs from 'fs'import _ from 'lodash-es'// import WOrm from 'w-orm-mongodb/src/WOrmMongodb.mjs' //自行選擇引用ORMimport WOrm from 'w-orm-lowdb/src/WOrmLowdb.mjs' //自行選擇引用ORMimport WServHapiServer from './src/WServHapiServer.mjs'async function run() {    //預先刪除w-orm-lowdb資料庫    try {        fs.unlinkSync('./db.json')    }    catch (err) {}    //optWOrm    let optWOrm = {        // url: 'mongodb://username:password@127.0.0.1:27017',        // db: 'servhapi',        url: './db.json',        db: 'servhapi',        cl: '',    }    //tableNamesExec, tableNamesSync    let tableNamesExec = ['tabA', 'tabB']    let tableNamesSync = ['tabA']    //kpOrm    let kpOrm = {}    for (let k in tableNamesExec) {        let v = tableNamesExec[k]        let opt = { ...optWOrm, cl: v }        let wo = new WOrm(opt)        kpOrm[v] = wo    }    async function saveData(cl, r) {        //w        let w = kpOrm[cl] //一定要由woItems操作, 否則傳woItems進去WServHapiServer會無法收到change事件        //save        await w.save(r) //autoInsert: false            .then(function(msg) {                console.log('save then', cl, msg)            })            .catch(function(msg) {                console.log('save catch', cl, msg)            })    }    let r    r = [        {            id: 'id-tabA-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabA-rosemary',            name: 'rosemary',            value: 123.456,        },        {            id: 'id-tabA-kettle',            name: 'kettle',            value: 456,        },    ]    await saveData('tabA', r)    r = [        {            id: 'id-tabB-peter',            name: 'peter',            value: 123,        },        {            id: 'id-tabB-rosemary',            name: 'rosemary',            value: 123.456,        },    ]    await saveData('tabB', r)    let ntv = 0    let genValue = () => {        ntv++        return `value-${ntv}`    }    let n = 0    let tn = setInterval(() => {        n++        console.log('update tabA', n)        r = {            id: 'id-tabA-peter',            name: 'peter',            value: genValue(),        }        saveData('tabA', r)        if (n >= 5) {            clearInterval(tn)        }    }, 3000)    let procCommon = async (userId, tableName, methodName, input) => {        // console.log('procCommon call', tableName, methodName, input)        let r = await kpOrm[tableName][methodName](input)        // console.log('procCommon result', r)        return r    }    let uploadFile = async (userId, { name, u8a }) => {        console.log('uploadFile', userId, name, _.size(u8a))        // fs.writeFileSync(name, Buffer.from(u8a))        console.log('uploadFile writeFileSync finish')        return 'finish'    }    let add = async (userId, { pa, pb }) => {        // console.log('add', userId, pa, pb)        return `result: pa+pb=${pa + pb}`    }    let ntg = 0    let genTag = () => {        ntg++        return `tag-${ntg}`    }    //WServHapiServer    let wsrv = new WServHapiServer({        port: 8080,        apis: [],        verifyConn: ({ apiType, authorization, query, headers, req }) => {            console.log('verifyConn', `apiType[${apiType}]`, `authorization[${authorization}]`)            return true        },        getUserIdByToken: async (token) => { //可使用async或sync函數            return 'id-for-admin'        },        useDbOrm: true, //開啟資料通道, 此時operOrm、tableNamesExec、authorizeExec為必填        kpOrm,        operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input        authorizeExec: async ({ userId, tableName, methodName, input }) => { //可使用async或sync函數, 預設拒絕, 回傳嚴格等於true才放行            if (userId !== 'id-for-admin') {                return false //取不到使用者時userId為空字串, 一律拒絕            }            if (tableName === 'tabB' &amp;&amp; methodName !== 'select') {                return false //tabB僅供讀取            }            return true        },        tableNamesExec,        methodsExec: ['select', 'insert', 'save', 'del'],        tableNamesSync,        kpFunExt: { //接收參數第1個為userId, 之後才是前端給予參數            uploadFile,            add,            //...        },        // fpTableTags: 'tableTags-serv-hapi.json',        genTag,    })    wsrv.on('error', (err) => {        console.log(err)    })    //停止: 宜先停止前端(其clearBroadcast與clearSync), 再停止伺服器; stop恆resolve, 停止為終態    // await wsrv.stop()}run()// save then tabA [//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 },//   { n: 1, nInserted: 1, ok: 1 }// ]// save then tabB [ { n: 1, nInserted: 1, ok: 1 }, { n: 1, nInserted: 1, ok: 1 } ]// Server running at: http://DESKTOP-6R7USAO:8080// Server[port:8080]: now clients: 1// uploadFile id-for-admin zdata.b1 3// uploadFile writeFileSync finish// update tabA 1// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 2// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 3// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 4// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]// update tabA 5// save then tabA [ { n: 1, nModified: 1, ok: 1 } ]</code></pre>
 
 
 
@@ -257,7 +257,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入Hapi伺服器通訊port，預設8080</p></td>
+            <td class="description last"><p>輸入Hapi伺服器通訊port，須為1至65535之整數，無效時取預設8080</p></td>
         </tr>
 
     
@@ -297,47 +297,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入允許跨域呼叫之網域陣列，給予['*']代表允許外部任意網域跨域，預設['http://localhost']</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>delayForSlice</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Integer</span>
-
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    <code>100</code>
-                
-                </td>
-            
-
-            <td class="description last"><p>輸入切片上傳檔案API用延遲響應時間，單位ms，預設100</p></td>
+            <td class="description last"><p>輸入允許跨域呼叫之網域陣列，給予['<em>']代表允許外部任意網域跨域('</em>'須單獨出現)。給予單一字串時視為只含該網域之陣列；給予false或<a href="%E5%90%AB%E5%8F%AA%E6%9C%89%E7%A9%BA%E5%AD%97%E4%B8%B2%E8%80%85"></a>代表停用跨域：不回應CORS標頭，瀏覽器無法跨來源讀取回應(伺服器端之存取控制仍由verifyConn決定)；陣列中之空字串會被忽略。未給(undefined或null)時取預設；給予其他值時建構即同步拋錯，不會退回預設；hapi不接受之陣列(如含非字串元素、'*'與其他網域並存)由hapi於建構時同步拋錯。允許跨域時，回應以Access-Control-Expose-Headers曝露Return-Type、Return-Msg、Return-Retryable、Content-Disposition四個標頭，使前端(browser)與API不同源時download仍可讀取成敗與檔名，預設['http://localhost']</p></td>
         </tr>
 
     
@@ -377,7 +337,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入是否使用@hapi/inert取得指定資料夾下所有靜態檔案，預設true</p></td>
+            <td class="description last"><p>輸入是否使用@hapi/inert提供pathStaticFiles資料夾下之靜態檔案，靜態檔案不經verifyConn，即對所有連線者公開。未給(undefined或null)時取預設；有給但非布林值(如字串'false'、數值0)時建構即同步拋錯，不會退回提供，預設true</p></td>
         </tr>
 
     
@@ -417,7 +377,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'</p></td>
+            <td class="description last"><p>輸入當useInert=true時指定伺服器資料夾名稱。未給(undefined或null)時取預設；有給但非非空字串時不論useInert皆建構即同步拋錯，不會改為公開預設資料夾，預設'dist'</p></td>
         </tr>
 
     
@@ -457,7 +417,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入Hapi伺服器設定API陣列，預設[]</p></td>
+            <td class="description last"><p>輸入額外之Hapi路由設定陣列，不經verifyConn須自行把關。路徑不得與本套件之通訊路由(以<code>/${apiName}/</code>開頭之main、ulctr、slc、dwgfn、dwgf、dw)衝突，衝突時伺服器不啟動，ready以該錯誤reject並發出error事件，預設[]</p></td>
         </tr>
 
     
@@ -497,7 +457,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入API名稱字串，預設'api'</p></td>
+            <td class="description last"><p>輸入API名稱字串，原樣轉傳w-converhp，預設'api'</p></td>
         </tr>
 
     
@@ -537,7 +497,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入暫時存放切片上傳檔案資料夾字串，預設'./uploadTemp'</p></td>
+            <td class="description last"><p>輸入暫時存放切片上傳檔案資料夾字串，原樣轉傳w-converhp，由其建立資料夾並以error事件回報失敗，預設'./uploadTemp'</p></td>
         </tr>
 
     
@@ -577,7 +537,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入token類型字串，預設'Bearer'</p></td>
+            <td class="description last"><p>輸入token類型字串，原樣轉傳w-converhp，預設'Bearer'</p></td>
         </tr>
 
     
@@ -617,7 +577,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024</p></td>
+            <td class="description last"><p>輸入切片上傳檔案之切片檔案大小整數，單位為Byte，原樣轉傳w-converhp，須與前端之sizeSlice一致，預設為1024*1024</p></td>
         </tr>
 
     
@@ -657,7 +617,47 @@
                 </td>
             
 
-            <td class="description last"><p>輸入單次請求本體大小上限整數，單位為Byte，預設為100<em>1024</em>1024。適用於除切片上傳外之各API，超過上限會回應413，大檔案請改用切片上傳</p></td>
+            <td class="description last"><p>輸入單次請求本體大小上限整數，單位為Byte，原樣轉傳w-converhp。適用於除切片上傳外之各API，超過上限會回應413，大檔案請改用切片上傳，預設為100<em>1024</em>1024</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>delayForSlice</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>100</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入切片上傳檔案API用延遲響應時間，單位ms，原樣轉傳w-converhp，預設100</p></td>
         </tr>
 
     
@@ -697,7 +697,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入呼叫API時檢測函數，預設()=&gt;{return true}</p></td>
+            <td class="description last"><p>輸入呼叫API時之連線檢測函數，原樣轉傳w-converhp，可使用sync或async函數，回傳嚴格等於true才放行。作用於本套件之通訊路由(含切片上傳與下載)，不作用於靜態檔案與apis。未給(undefined或null)時全部放行；有給但非函數時不拋錯，通訊路由一律以permission denied拒絕，並由w-converhp於建構期間發出一則error事件。切片上傳另須於getInstWConverServer所得實體註冊upload監聽才會受理(本套件與w-serv-webdata皆不註冊)，未註冊時於寫入pathUploadTemp之前即回應'no listener for event[upload]'並發出error事件；註冊後若未給verifyConn，匿名請求亦可呼叫切片上傳而寫入pathUploadTemp。表操作之授權另由authorizeExec負責，預設()=&gt;{return true}</p></td>
         </tr>
 
     
@@ -737,7 +737,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=&gt;''</p></td>
+            <td class="description last"><p>輸入取得使用者ID的回調函數，原樣轉傳w-serv-webdata，傳入參數為前端提供之token字串，可使用sync或async函數，回傳非字串時視為空字串。須完整驗證token(不可只解碼)，其token取自請求內容，與verifyConn所驗證者為不同來源。拋錯或reject時拒絕該次呼叫，其值原樣成為回應訊息並發出error事件；有給但非函數時建構即同步拋錯，預設async()=&gt;''</p></td>
         </tr>
 
     
@@ -772,12 +772,12 @@
             
                 <td class="default">
                 
-                    <code>true</code>
+                    <code>false</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true</p></td>
+            <td class="description last"><p>輸入是否開啟資料通道，原樣轉傳w-serv-webdata。給予true代表前端可直接呼叫由tableNamesExec與methodsExec組成之表操作(例如'tabA.select')，並自動同步tableNamesSync所指定之資料表至前端，此時operOrm、tableNamesExec、authorizeExec為必填，未給或無效時建構即同步拋錯。未指定(非布林值)時視為false，此時若給了operOrm、tableNamesExec、methodsExec、authorizeExec、kpOrm或tableNamesSync，建構即同步拋錯，預設false</p></td>
         </tr>
 
     
@@ -812,12 +812,12 @@
             
                 <td class="default">
                 
-                    <code>{}</code>
+                    <code>null</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}</p></td>
+            <td class="description last"><p>輸入各資料表的操作物件，原樣轉傳w-serv-webdata，用以提供由tableNamesSync指定資料表的change事件，key為表名而值為該表的操作器實體(可使用例如WOrmMongodb等建立)。useDbOrm=true時必填且須為物件，否則建構即同步拋錯；為空物件時不同步；tableNamesSync之各表須在其中且可監聽change事件，否則建構時同步拋錯，預設null</p></td>
         </tr>
 
     
@@ -852,12 +852,52 @@
             
                 <td class="default">
                 
-                    <code>{}</code>
+                    <code>null</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入各資料表的操作通用接口物件，用以提供操作由tableNamesExec指定資料表的例如'select'、'insert'、'save'、'del'函數。加上由extFuncs提供的函數，就為全部可由前端執行的函數，預設{}</p></td>
+            <td class="description last"><p>輸入各資料表的操作通用接口函數，原樣轉傳w-serv-webdata，傳入參數依序為userId、tableName、methodName、input，用以執行tableNamesExec所指定資料表之例如'select'、'insert'、'save'、'del'。前端呼叫表操作時須先通過authorizeExec授權才會呼叫operOrm，operOrm不負責授權。useDbOrm=true時必填，預設null</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>authorizeExec</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>null</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入資料表操作之授權函數，原樣轉傳w-serv-webdata，useDbOrm=true時必填。前端呼叫表操作時，於呼叫operOrm之前傳入物件{ userId, tableName, methodName, input }，可使用sync或async函數。採預設拒絕，回傳值須嚴格等於true才放行，其他值一律拒絕並回應'permission denied'且不呼叫operOrm；拋錯或reject時其值原樣成為回應訊息。userId取不到時為空字串，宜拒絕；methodName宜以白名單判斷。不作用於kpFunExt與系統函數，其拒絕亦不發出error事件。同步資料時前端以不帶參數之表操作select取整表，故tableNamesSync內之表其select須對所有連線者放行，否則被拒絕之前端取不到該表資料(既有資料維持不變)，且每次重抓皆於前端發出error事件，預設null</p></td>
         </tr>
 
     
@@ -892,12 +932,12 @@
             
                 <td class="default">
                 
-                    <code>[]</code>
+                    <code>null</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入指定能被操作的表名陣列，預設[]</p></td>
+            <td class="description last"><p>輸入指定能被操作的表名陣列，原樣轉傳w-serv-webdata，各元素須為非空字串，useDbOrm=true時必填(可為空陣列)，否則建構即同步拋錯，預設null</p></td>
         </tr>
 
     
@@ -937,7 +977,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入指定綁定操作器的方式陣列，可選'select'、'insert'、'save'、'del'、'delAll'，預設['select', 'insert', 'save', 'del']</p></td>
+            <td class="description last"><p>輸入指定綁定操作器的方式陣列，原樣轉傳w-serv-webdata，各元素須為非空字串，可選'select'、'insert'、'save'、'del'、'delAll'。未給時取預設['select', 'insert', 'save', 'del']；useDbOrm=true時若有給須為陣列，否則建構即同步拋錯</p></td>
         </tr>
 
     
@@ -972,12 +1012,12 @@
             
                 <td class="default">
                 
-                    <code>[]</code>
+                    <code>null</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入指定能被同步的表名陣列，預設[]</p></td>
+            <td class="description last"><p>輸入指定能被同步的表名陣列，原樣轉傳w-serv-webdata，各元素須為非空字串。各表須在kpOrm中且可監聽change事件；前端以表操作select取同步資料，故各表亦須在tableNamesExec中且methodsExec含'select'(kpFunExt提供之同名函數不算)，違反者建構即同步拋錯；未給時不同步，預設null</p></td>
         </tr>
 
     
@@ -1017,7 +1057,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入額外擴充執行函數物件，key為函數名而值為函數，預設null</p></td>
+            <td class="description last"><p>輸入額外擴充執行函數物件，原樣轉傳w-serv-webdata，須為純物件，key為函數名而值為函數(值非函數時建構即同步拋錯)，函數第1參數為userId(取不到時為空字串)，之後為前端給予之參數。不經authorizeExec須各自把關。函數名須能被前端綁定：路徑不得為空或有空段，各段不得為'<strong>proto</strong>'、'constructor'、'prototype'，不得以'[sys:'開頭，頂層名不得為表名(例如表名為'tabA'時，'tabA'、'tabA.count'、'tabA[select]'皆不可)，且不同函數名不得解析為同一路徑或互為前綴(例如'a'與'a.b')，違反者建構時同步拋錯，預設null</p></td>
         </tr>
 
     
@@ -1052,12 +1092,12 @@
             
                 <td class="default">
                 
-                    <code>'tableTags.json'</code>
+                    <code>'./tableTags.json'</code>
                 
                 </td>
             
 
-            <td class="description last"><p>輸入儲存各資料表時間戳檔案路徑串，預設'./tableTags.json'</p></td>
+            <td class="description last"><p>輸入儲存各資料表時間戳檔案路徑串，轉傳w-serv-webdata，有給但非非空字串時建構即同步拋錯；未給時相容舊名fnTableTags，預設'./tableTags.json'</p></td>
         </tr>
 
     
@@ -1097,7 +1137,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入產生不重複識別碼函數，預設()=&gt;'{random string}'</p></td>
+            <td class="description last"><p>輸入產生不重複識別碼函數，原樣轉傳w-serv-webdata，須回傳非空字串，有給但非函數時建構即同步拋錯，預設()=&gt;'{random string}'</p></td>
         </tr>
 
     
@@ -1170,7 +1210,7 @@
 
         
 <div class="param-desc">
-    <p>回傳事件物件，提供getServer函數回傳hapi伺服器實體，提供getInstWConverServer回傳擴展功能實體，可監聽error事件</p>
+    <p>回傳事件物件，可監聽error事件，涵蓋啟動失敗與執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)，內容依來源層而異(hapi之Error、w-converhp之訊息字串、w-serv-broadcast與w-sync-webdata之{msg,err})；建構期間發生者於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時改以console.error輸出(前綴[w-serv-hapi])；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)，亦不影響ready與stop之結果。設定錯誤(例如useDbOrm=true而未給authorizeExec、useInert有給但非布林值)於建構時同步拋出(w-serv-webdata之設定錯誤拋出時，pathUploadTemp資料夾可能已由w-converhp建立)。另提供：ready函數，回傳promise，伺服器啟動成功時resolve為hapi伺服器實體，啟動失敗(例如埠被占用、apis路由衝突)時以原錯誤reject；stop函數，回傳promise，等待啟動結束後依序釋放下游於同一事件物件上所建立之資源(w-serv-broadcast之輪詢計時器與在線偵測；資料同步：移除掛於kpOrm之change監聽、取消待推播之時間戳並將尚未落檔者寫入檔案，落檔失敗時發出error事件)再停止伺服器，恆resolve，失敗時發出error事件。停止時不再接受新連線，閒置之連線立即關閉，仍有請求進行中之連線最多等待5秒(hapi之預設)後中斷；stop只等連線，不等也不中止應用端之處理(operOrm、kpFunExt等)與上傳之合併worker：連線已中斷者(例如前端已停止而中止其請求)stop即完成，其處理仍續行並照常寫入副作用，Node行程待其完成才結束；前端未中止之請求(例如使用端之$fapi呼叫)於連線被中斷時失敗並依其重試設定重試，故宜先停止前端再停止伺服器。停止為終態：其後ready仍回傳原結果，再呼叫stop回傳同一promise而不再停止，請勿以getServer所得實體重新start(下游已釋放，只剩半個服務)。停止時w-serv-broadcast對已進入之前端補發之clientLeave與clientChange於其後約1ms才送達，可能晚於stop之promise；前端停止而伺服器繼續服務時，w-serv-broadcast約10秒(其在線逾時)後才判定該前端離線並發出clientLeave。同一行程內多個實例須給不同之fpTableTags與pathUploadTemp。本套件不註冊process之unhandledRejection、uncaughtException與uncaughtExceptionMonitor監聽，全域錯誤政策由使用端自行決定；getServer函數，回傳promise，resolve為hapi伺服器實體(不保證已啟動，確認啟動請用ready)，其stop、start請勿自行呼叫(並發時本物件之stop會於hapi停止前即resolve)，停止請一律用本物件之stop；getInstWConverServer函數，回傳promise，resolve為經w-serv-webdata擴充後之通訊實體，可於其上註冊upload監聽以受理切片上傳；其上另有w-converhp所掛之stop，呼叫會直接停止本伺服器而不釋放下游資源，停止請一律用本物件之stop</p>
 </div>
 
 
@@ -1229,7 +1269,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Oct 11 2026 15:51:21 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Oct 14 2026 02:13:06 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

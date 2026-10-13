@@ -48,20 +48,16 @@
             <pre class="prettyprint source linenums"><code>import Hapi from '@hapi/hapi'
 import Inert from '@hapi/inert'
 import get from 'lodash-es/get.js'
-import now2str from 'wsemi/src/now2str.mjs'
-import genID from 'wsemi/src/genID.mjs'
+import isarr from 'wsemi/src/isarr.mjs'
 import isearr from 'wsemi/src/isearr.mjs'
+import isstr from 'wsemi/src/isstr.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
-import isint from 'wsemi/src/isint.mjs'
 import isestr from 'wsemi/src/isestr.mjs'
 import ispint from 'wsemi/src/ispint.mjs'
-import isp0int from 'wsemi/src/isp0int.mjs'
 import isfun from 'wsemi/src/isfun.mjs'
 import cint from 'wsemi/src/cint.mjs'
 import evem from 'wsemi/src/evem.mjs'
-import waitFun from 'wsemi/src/waitFun.mjs'
-import fsIsFolder from 'wsemi/src/fsIsFolder.mjs'
-import fsCreateFolder from 'wsemi/src/fsCreateFolder.mjs'
+import evEmit from 'wsemi/src/evEmit.mjs'
 import WConverhpServer from 'w-converhp/src/WConverhpServer.mjs'
 import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
 
@@ -71,30 +67,31 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *
  * @class
  * @param {Object} [opt={}] 輸入設定物件，預設{}
- * @param {Integer} [opt.port=8080] 輸入Hapi伺服器通訊port，預設8080
- * @param {Array} [opt.corsOrigins=['http://localhost']] 輸入允許跨域呼叫之網域陣列，給予['*']代表允許外部任意網域跨域，預設['http://localhost']
- * @param {Integer} [opt.delayForSlice=100] 輸入切片上傳檔案API用延遲響應時間，單位ms，預設100
- * @param {Boolean} [opt.useInert=true] 輸入是否使用@hapi/inert取得指定資料夾下所有靜態檔案，預設true
- * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱，預設'dist'
- * @param {Array} [opt.apis=[]] 輸入Hapi伺服器設定API陣列，預設[]
- * @param {String} [opt.apiName='api'] 輸入API名稱字串，預設'api'
- * @param {String} [opt.pathUploadTemp='./uploadTemp'] 輸入暫時存放切片上傳檔案資料夾字串，預設'./uploadTemp'
- * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，預設'Bearer'
- * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，預設為1024*1024
- * @param {Integer} [opt.sizeMsg=100*1024*1024] 輸入單次請求本體大小上限整數，單位為Byte，預設為100*1024*1024。適用於除切片上傳外之各API，超過上限會回應413，大檔案請改用切片上傳
- * @param {Function} [opt.verifyConn=()=>{return true}] 輸入呼叫API時檢測函數，預設()=>{return true}
- * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，傳入參數為各函數的原始參數，預設async()=>''
- * @param {Boolean} [opt.useDbOrm=true] 輸入是否使用資料庫ORM技術，給予false代表不使用直接存取資料庫函數與自動同步資料庫至前端功能，預設true
- * @param {Object} [opt.kpOrm={}] 輸入各資料表的操作物件，用以提供由tableNamesSync指定資料表的change事件，使能監聽與觸發資料變更事件，key為表名而值為該表的操作器實體，操作器實體可使用例如WOrmMongodb等建立，預設{}
- * @param {Function} [opt.operOrm={}] 輸入各資料表的操作通用接口物件，用以提供操作由tableNamesExec指定資料表的例如'select'、'insert'、'save'、'del'函數。加上由extFuncs提供的函數，就為全部可由前端執行的函數，預設{}
- * @param {Array} [opt.tableNamesExec=[]] 輸入指定能被操作的表名陣列，預設[]
- * @param {Array} [opt.methodsExec=['select','insert','save','del']] 輸入指定綁定操作器的方式陣列，可選'select'、'insert'、'save'、'del'、'delAll'，預設['select', 'insert', 'save', 'del']
- * @param {Array} [opt.tableNamesSync=[]] 輸入指定能被同步的表名陣列，預設[]
- * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，key為函數名而值為函數，預設null
- * @param {String} [opt.fpTableTags='tableTags.json'] 輸入儲存各資料表時間戳檔案路徑串，預設'./tableTags.json'
- * @param {Function} [opt.genTag=()=>'{random string}'] 輸入產生不重複識別碼函數，預設()=>'{random string}'
+ * @param {Integer} [opt.port=8080] 輸入Hapi伺服器通訊port，須為1至65535之整數，無效時取預設8080
+ * @param {Array} [opt.corsOrigins=['http://localhost']] 輸入允許跨域呼叫之網域陣列，給予['*']代表允許外部任意網域跨域('*'須單獨出現)。給予單一字串時視為只含該網域之陣列；給予false或[](含只有空字串者)代表停用跨域：不回應CORS標頭，瀏覽器無法跨來源讀取回應(伺服器端之存取控制仍由verifyConn決定)；陣列中之空字串會被忽略。未給(undefined或null)時取預設；給予其他值時建構即同步拋錯，不會退回預設；hapi不接受之陣列(如含非字串元素、'*'與其他網域並存)由hapi於建構時同步拋錯。允許跨域時，回應以Access-Control-Expose-Headers曝露Return-Type、Return-Msg、Return-Retryable、Content-Disposition四個標頭，使前端(browser)與API不同源時download仍可讀取成敗與檔名，預設['http://localhost']
+ * @param {Boolean} [opt.useInert=true] 輸入是否使用@hapi/inert提供pathStaticFiles資料夾下之靜態檔案，靜態檔案不經verifyConn，即對所有連線者公開。未給(undefined或null)時取預設；有給但非布林值(如字串'false'、數值0)時建構即同步拋錯，不會退回提供，預設true
+ * @param {String} [opt.pathStaticFiles='dist'] 輸入當useInert=true時指定伺服器資料夾名稱。未給(undefined或null)時取預設；有給但非非空字串時不論useInert皆建構即同步拋錯，不會改為公開預設資料夾，預設'dist'
+ * @param {Array} [opt.apis=[]] 輸入額外之Hapi路由設定陣列，不經verifyConn須自行把關。路徑不得與本套件之通訊路由(以`/${apiName}/`開頭之main、ulctr、slc、dwgfn、dwgf、dw)衝突，衝突時伺服器不啟動，ready以該錯誤reject並發出error事件，預設[]
+ * @param {String} [opt.apiName='api'] 輸入API名稱字串，原樣轉傳w-converhp，預設'api'
+ * @param {String} [opt.pathUploadTemp='./uploadTemp'] 輸入暫時存放切片上傳檔案資料夾字串，原樣轉傳w-converhp，由其建立資料夾並以error事件回報失敗，預設'./uploadTemp'
+ * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，原樣轉傳w-converhp，預設'Bearer'
+ * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，原樣轉傳w-converhp，須與前端之sizeSlice一致，預設為1024*1024
+ * @param {Integer} [opt.sizeMsg=100*1024*1024] 輸入單次請求本體大小上限整數，單位為Byte，原樣轉傳w-converhp。適用於除切片上傳外之各API，超過上限會回應413，大檔案請改用切片上傳，預設為100*1024*1024
+ * @param {Integer} [opt.delayForSlice=100] 輸入切片上傳檔案API用延遲響應時間，單位ms，原樣轉傳w-converhp，預設100
+ * @param {Function} [opt.verifyConn=()=>{return true}] 輸入呼叫API時之連線檢測函數，原樣轉傳w-converhp，可使用sync或async函數，回傳嚴格等於true才放行。作用於本套件之通訊路由(含切片上傳與下載)，不作用於靜態檔案與apis。未給(undefined或null)時全部放行；有給但非函數時不拋錯，通訊路由一律以permission denied拒絕，並由w-converhp於建構期間發出一則error事件。切片上傳另須於getInstWConverServer所得實體註冊upload監聽才會受理(本套件與w-serv-webdata皆不註冊)，未註冊時於寫入pathUploadTemp之前即回應'no listener for event[upload]'並發出error事件；註冊後若未給verifyConn，匿名請求亦可呼叫切片上傳而寫入pathUploadTemp。表操作之授權另由authorizeExec負責，預設()=>{return true}
+ * @param {Function} [opt.getUserIdByToken=async()=>''] 輸入取得使用者ID的回調函數，原樣轉傳w-serv-webdata，傳入參數為前端提供之token字串，可使用sync或async函數，回傳非字串時視為空字串。須完整驗證token(不可只解碼)，其token取自請求內容，與verifyConn所驗證者為不同來源。拋錯或reject時拒絕該次呼叫，其值原樣成為回應訊息並發出error事件；有給但非函數時建構即同步拋錯，預設async()=>''
+ * @param {Boolean} [opt.useDbOrm=false] 輸入是否開啟資料通道，原樣轉傳w-serv-webdata。給予true代表前端可直接呼叫由tableNamesExec與methodsExec組成之表操作(例如'tabA.select')，並自動同步tableNamesSync所指定之資料表至前端，此時operOrm、tableNamesExec、authorizeExec為必填，未給或無效時建構即同步拋錯。未指定(非布林值)時視為false，此時若給了operOrm、tableNamesExec、methodsExec、authorizeExec、kpOrm或tableNamesSync，建構即同步拋錯，預設false
+ * @param {Object} [opt.kpOrm=null] 輸入各資料表的操作物件，原樣轉傳w-serv-webdata，用以提供由tableNamesSync指定資料表的change事件，key為表名而值為該表的操作器實體(可使用例如WOrmMongodb等建立)。useDbOrm=true時必填且須為物件，否則建構即同步拋錯；為空物件時不同步；tableNamesSync之各表須在其中且可監聽change事件，否則建構時同步拋錯，預設null
+ * @param {Function} [opt.operOrm=null] 輸入各資料表的操作通用接口函數，原樣轉傳w-serv-webdata，傳入參數依序為userId、tableName、methodName、input，用以執行tableNamesExec所指定資料表之例如'select'、'insert'、'save'、'del'。前端呼叫表操作時須先通過authorizeExec授權才會呼叫operOrm，operOrm不負責授權。useDbOrm=true時必填，預設null
+ * @param {Function} [opt.authorizeExec=null] 輸入資料表操作之授權函數，原樣轉傳w-serv-webdata，useDbOrm=true時必填。前端呼叫表操作時，於呼叫operOrm之前傳入物件{ userId, tableName, methodName, input }，可使用sync或async函數。採預設拒絕，回傳值須嚴格等於true才放行，其他值一律拒絕並回應'permission denied'且不呼叫operOrm；拋錯或reject時其值原樣成為回應訊息。userId取不到時為空字串，宜拒絕；methodName宜以白名單判斷。不作用於kpFunExt與系統函數，其拒絕亦不發出error事件。同步資料時前端以不帶參數之表操作select取整表，故tableNamesSync內之表其select須對所有連線者放行，否則被拒絕之前端取不到該表資料(既有資料維持不變)，且每次重抓皆於前端發出error事件，預設null
+ * @param {Array} [opt.tableNamesExec=null] 輸入指定能被操作的表名陣列，原樣轉傳w-serv-webdata，各元素須為非空字串，useDbOrm=true時必填(可為空陣列)，否則建構即同步拋錯，預設null
+ * @param {Array} [opt.methodsExec=['select','insert','save','del']] 輸入指定綁定操作器的方式陣列，原樣轉傳w-serv-webdata，各元素須為非空字串，可選'select'、'insert'、'save'、'del'、'delAll'。未給時取預設['select', 'insert', 'save', 'del']；useDbOrm=true時若有給須為陣列，否則建構即同步拋錯
+ * @param {Array} [opt.tableNamesSync=null] 輸入指定能被同步的表名陣列，原樣轉傳w-serv-webdata，各元素須為非空字串。各表須在kpOrm中且可監聽change事件；前端以表操作select取同步資料，故各表亦須在tableNamesExec中且methodsExec含'select'(kpFunExt提供之同名函數不算)，違反者建構即同步拋錯；未給時不同步，預設null
+ * @param {Object} [opt.kpFunExt=null] 輸入額外擴充執行函數物件，原樣轉傳w-serv-webdata，須為純物件，key為函數名而值為函數(值非函數時建構即同步拋錯)，函數第1參數為userId(取不到時為空字串)，之後為前端給予之參數。不經authorizeExec須各自把關。函數名須能被前端綁定：路徑不得為空或有空段，各段不得為'__proto__'、'constructor'、'prototype'，不得以'[sys:'開頭，頂層名不得為表名(例如表名為'tabA'時，'tabA'、'tabA.count'、'tabA[select]'皆不可)，且不同函數名不得解析為同一路徑或互為前綴(例如'a'與'a.b')，違反者建構時同步拋錯，預設null
+ * @param {String} [opt.fpTableTags='./tableTags.json'] 輸入儲存各資料表時間戳檔案路徑串，轉傳w-serv-webdata，有給但非非空字串時建構即同步拋錯；未給時相容舊名fnTableTags，預設'./tableTags.json'
+ * @param {Function} [opt.genTag=()=>'{random string}'] 輸入產生不重複識別碼函數，原樣轉傳w-serv-webdata，須回傳非空字串，有給但非函數時建構即同步拋錯，預設()=>'{random string}'
  * @param {Boolean} [opt.useShowLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
- * @returns {Object} 回傳事件物件，提供getServer函數回傳hapi伺服器實體，提供getInstWConverServer回傳擴展功能實體，可監聽error事件
+ * @returns {Object} 回傳事件物件，可監聽error事件，涵蓋啟動失敗與執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)，內容依來源層而異(hapi之Error、w-converhp之訊息字串、w-serv-broadcast與w-sync-webdata之{msg,err})；建構期間發生者於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時改以console.error輸出(前綴[w-serv-hapi])；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)，亦不影響ready與stop之結果。設定錯誤(例如useDbOrm=true而未給authorizeExec、useInert有給但非布林值)於建構時同步拋出(w-serv-webdata之設定錯誤拋出時，pathUploadTemp資料夾可能已由w-converhp建立)。另提供：ready函數，回傳promise，伺服器啟動成功時resolve為hapi伺服器實體，啟動失敗(例如埠被占用、apis路由衝突)時以原錯誤reject；stop函數，回傳promise，等待啟動結束後依序釋放下游於同一事件物件上所建立之資源(w-serv-broadcast之輪詢計時器與在線偵測；資料同步：移除掛於kpOrm之change監聽、取消待推播之時間戳並將尚未落檔者寫入檔案，落檔失敗時發出error事件)再停止伺服器，恆resolve，失敗時發出error事件。停止時不再接受新連線，閒置之連線立即關閉，仍有請求進行中之連線最多等待5秒(hapi之預設)後中斷；stop只等連線，不等也不中止應用端之處理(operOrm、kpFunExt等)與上傳之合併worker：連線已中斷者(例如前端已停止而中止其請求)stop即完成，其處理仍續行並照常寫入副作用，Node行程待其完成才結束；前端未中止之請求(例如使用端之$fapi呼叫)於連線被中斷時失敗並依其重試設定重試，故宜先停止前端再停止伺服器。停止為終態：其後ready仍回傳原結果，再呼叫stop回傳同一promise而不再停止，請勿以getServer所得實體重新start(下游已釋放，只剩半個服務)。停止時w-serv-broadcast對已進入之前端補發之clientLeave與clientChange於其後約1ms才送達，可能晚於stop之promise；前端停止而伺服器繼續服務時，w-serv-broadcast約10秒(其在線逾時)後才判定該前端離線並發出clientLeave。同一行程內多個實例須給不同之fpTableTags與pathUploadTemp。本套件不註冊process之unhandledRejection、uncaughtException與uncaughtExceptionMonitor監聽，全域錯誤政策由使用端自行決定；getServer函數，回傳promise，resolve為hapi伺服器實體(不保證已啟動，確認啟動請用ready)，其stop、start請勿自行呼叫(並發時本物件之stop會於hapi停止前即resolve)，停止請一律用本物件之stop；getInstWConverServer函數，回傳promise，resolve為經w-serv-webdata擴充後之通訊實體，可於其上註冊upload監聽以受理切片上傳；其上另有w-converhp所掛之stop，呼叫會直接停止本伺服器而不釋放下游資源，停止請一律用本物件之stop
  * @example
  *
  * import fs from 'fs'
@@ -239,9 +236,18 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *         getUserIdByToken: async (token) => { //可使用async或sync函數
  *             return 'id-for-admin'
  *         },
- *         useDbOrm: true,
+ *         useDbOrm: true, //開啟資料通道, 此時operOrm、tableNamesExec、authorizeExec為必填
  *         kpOrm,
  *         operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
+ *         authorizeExec: async ({ userId, tableName, methodName, input }) => { //可使用async或sync函數, 預設拒絕, 回傳嚴格等於true才放行
+ *             if (userId !== 'id-for-admin') {
+ *                 return false //取不到使用者時userId為空字串, 一律拒絕
+ *             }
+ *             if (tableName === 'tabB' &amp;&amp; methodName !== 'select') {
+ *                 return false //tabB僅供讀取
+ *             }
+ *             return true
+ *         },
  *         tableNamesExec,
  *         methodsExec: ['select', 'insert', 'save', 'del'],
  *         tableNamesSync,
@@ -257,6 +263,9 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  *     wsrv.on('error', (err) => {
  *         console.log(err)
  *     })
+ *
+ *     //停止: 宜先停止前端(其clearBroadcast與clearSync), 再停止伺服器; stop恆resolve, 停止為終態
+ *     // await wsrv.stop()
  *
  * }
  * run()
@@ -285,39 +294,50 @@ import WServWebdataServer from 'w-serv-webdata/src/WServWebdataServer.mjs'
  */
 function WServHapiServer(opt = {}) {
     let ev = evem()
-    let server = null
-    let instWConverServer = null
 
-    //port
+    //port, 比照w-converhp: 須為安全正整數且不超過65535, 否則取預設; 檢核與正規化須成對(ispint亦接受數字字串)
+    //why: 原以isint檢核, -1於hapi建構時拋錯、70000則至啟動時才失敗, 同一選項之非法值分屬兩個通道
     let port = get(opt, 'port')
-    if (!isint(port)) {
+    if (!ispint(port, { useLimitSafe: true }) || cint(port) > 65535) {
         port = 8080
     }
+    port = cint(port)
 
-    //corsOrigins
-    let corsOrigins = get(opt, 'corsOrigins', [])
-    if (!isearr(corsOrigins)) {
-        corsOrigins = ['http://localhost'] //['*']
+    //ownOpt, 曝露與存取控制之自用選項(corsOrigins、useInert、pathStaticFiles)之共同規則: 未給(undefined或null)取預設, 有給而無效時建構即同步拋錯, 不得退回預設
+    //why: 原對有給而無效者靜默改用預設, 而useInert與pathStaticFiles之預設即公開資料夾(給予'false'、0仍公開, 給予''即改公開dist), corsOrigins給予false、[]亦被換成允許http://localhost, 使用端以為已關閉而實際未關且無任何訊號
+    //通道依R2(可同步判定之設定錯誤於建構時同步拋出), 訊息比照w-serv-webdata之'invalid opt.X'; 檢核須早於Hapi與w-converhp之建構, 使拋錯時不留任何資源(w-converhp建構時即建立pathUploadTemp)
+    //port(R5)、apis、useShowLog不適用: 其無效值所取之預設即安全側, 比照w-serv-webdata之useDbOrm「非布林值視為未指定」
+    let ownOpt = (name, def, isValid) => {
+        let v = get(opt, name)
+        if (v === undefined || v === null) {
+            return def
+        }
+        if (!isValid(v)) {
+            throw new Error(`invalid opt.${name}`)
+        }
+        return v
     }
 
-    //delayForSlice
-    let delayForSlice = get(opt, 'delayForSlice', '')
-    if (!isp0int(delayForSlice)) {
-        delayForSlice = 100
+    //corsOrigins, 供本套件自建之Hapi伺服器設定cors, 預設刻意與w-converhp之預設['*']不同
+    //值之語意比照w-converhp: false、''、[](含只有空字串者)代表停用跨域; 單一字串視為只含該網域之陣列; 陣列剔除空字串後交hapi判定, hapi不接受者(含非字串元素、'*'與其他網域並存)由其於建構Hapi伺服器時同步拋錯
+    let corsOrigins = ownOpt('corsOrigins', ['http://localhost'], (v) => {
+        return v === false || isstr(v) || isarr(v)
+    })
+    if (corsOrigins === false) {
+        corsOrigins = []
     }
-    delayForSlice = cint(delayForSlice)
+    if (isstr(corsOrigins)) {
+        corsOrigins = [corsOrigins]
+    }
+    corsOrigins = corsOrigins.filter((v) => {
+        return v !== ''
+    })
 
     //useInert
-    let useInert = get(opt, 'useInert')
-    if (!isbol(useInert)) {
-        useInert = true
-    }
+    let useInert = ownOpt('useInert', true, isbol)
 
-    //pathStaticFiles
-    let pathStaticFiles = get(opt, 'pathStaticFiles')
-    if (!isestr(pathStaticFiles)) {
-        pathStaticFiles = 'dist'
-    }
+    //pathStaticFiles, 不論useInert皆檢核
+    let pathStaticFiles = ownOpt('pathStaticFiles', 'dist', isestr)
 
     //apis
     let apis = get(opt, 'apis')
@@ -325,110 +345,11 @@ function WServHapiServer(opt = {}) {
         apis = []
     }
 
-    //apiName
-    let apiName = get(opt, 'apiName')
-    if (!isestr(apiName)) {
-        apiName = 'api'
-    }
-
-    //pathUploadTemp
-    let pathUploadTemp = get(opt, 'pathUploadTemp')
-    if (!isestr(pathUploadTemp)) {
-        pathUploadTemp = './uploadTemp'
-    }
-    if (!fsIsFolder(pathUploadTemp)) {
-        fsCreateFolder(pathUploadTemp)
-    }
-
-    //tokenType
-    let tokenType = get(opt, 'tokenType')
-    if (!isestr(tokenType)) {
-        tokenType = 'Bearer'
-    }
-
-    //sizeSlice
-    let sizeSlice = get(opt, 'sizeSlice')
-    if (!ispint(sizeSlice)) {
-        sizeSlice = 1024 * 1024 //1m
-    }
-
-    //sizeMsg
-    let sizeMsg = get(opt, 'sizeMsg')
-    if (!ispint(sizeMsg)) {
-        sizeMsg = 100 * 1024 * 1024 //100m
-    }
-
-    //verifyConn
-    let verifyConn = get(opt, 'verifyConn')
-    if (!isfun(verifyConn)) {
-        verifyConn = () => {
-            return true
-        }
-    }
-
-    //getUserIdByToken
-    let getUserIdByToken = get(opt, 'getUserIdByToken', null)
-    // if (!isfun(getUserIdByToken)) {
-    //     getUserIdByToken = async () => {
-    //         return ''
-    //     }
-    // }
-
-    //useDbOrm
-    let useDbOrm = get(opt, 'useDbOrm', null)
-    if (!isbol(useDbOrm)) {
-        useDbOrm = true
-    }
-
-    //kpOrm, 輸入外部ORM實體, 常用變數名: kpOrm
-    let kpOrm = get(opt, 'kpOrm', null)
-    // if (!isobj(kpOrm)) {
-    //     ev.emit('error', 'invalid opt.kpOrm')
-    //     return ev
-    // }
-
-    //operOrm, ORM的泛用接口, 常用變數名: procCommon
-    let operOrm = get(opt, 'operOrm', null)
-    // if (!isfun(operOrm)) {
-    //     ev.emit('error', 'invalid opt.operOrm')
-    //     return ev
-    // }
-
-    //tableNamesExec, 指定能被呼叫的表名, 各表名需隸屬於ORM, 才能被ORM的泛用接口procCommon處理
-    let tableNamesExec = get(opt, 'tableNamesExec', null)
-    // if (!isarr(tableNamesExec)) {
-    //     ev.emit('error', 'invalid opt.tableNamesExec')
-    //     return ev
-    // }
-
-    //methodsExec
-    let methodsExec = get(opt, 'methodsExec', null)
-    // if (!isarr(methodsExec)) {
-    //     methodsExec = ['select', 'insert', 'save', 'del']
-    // }
-
-    //tableNamesSync, 指定需同步表名, 機敏資訊表記得過濾, 各表名需隸屬於ORM, 才能監聽其change事件
-    let tableNamesSync = get(opt, 'tableNamesSync', null)
-    // if (!isarr(tableNamesSync)) {
-    //     ev.emit('error', 'invalid opt.tableNamesSync')
-    //     return ev
-    // }
-
-    //kpFunExt
-    let kpFunExt = get(opt, 'kpFunExt', null)
-
     //fpTableTags, 相容舊名fnTableTags(w-serv-webdata只讀fpTableTags, 舊名傳下去等同未給而恆取其預設值)
+    //僅於未給新名時才改用舊名, 有給之值原樣轉傳, 由w-serv-webdata檢核(有給但非非空字串時拋錯), 不可因無效而靜默改用舊名或預設
     let fpTableTags = get(opt, 'fpTableTags', null)
-    if (!isestr(fpTableTags)) {
+    if (fpTableTags === null || fpTableTags === undefined) {
         fpTableTags = get(opt, 'fnTableTags', null)
-    }
-
-    //genTag
-    let genTag = get(opt, 'genTag')
-    if (!isfun(genTag)) {
-        genTag = () => {
-            return now2str() + '|' + genID(6)
-        }
     }
 
     //useShowLog
@@ -437,34 +358,131 @@ function WServHapiServer(opt = {}) {
         useShowLog = true
     }
 
-    //createHapiServer
-    let createHapiServer = async () => {
+    //轉傳選項: 交給w-converhp(apiName、pathUploadTemp、tokenType、sizeSlice、sizeMsg、verifyConn、delayForSlice)與w-serv-webdata(useDbOrm、authorizeExec、operOrm等)者一律原樣轉傳, 本套件不另訂預設與檢核
+    //why: 本套件曾對只負責轉傳之useDbOrm另訂預設true, w-serv-webdata 1.1.7改預設為false並新增必填authorizeExec後即分歧, 使用端一律無法啟動; 預設與檢核由下游單一擁有
 
-        //Hapi.Server
-        server = new Hapi.Server({
-            port,
-            routes: {
-                timeout: {
-                    server: false, //關閉伺服器超時
-                    socket: false, //關閉socket超時
-                },
-                cors: {
-                    origin: corsOrigins, //Access-Control-Allow-Origin
-                    credentials: false, //Access-Control-Allow-Credentials
-                    //additionalExposedHeaders, w-converhp之回應協定除本體外另靠此四個標頭傳成敗(Return-Type/Return-Msg)、可否重試(Return-Retryable)與檔名(Content-Disposition),
-                    //瀏覽器對跨來源回應只讓JS讀Access-Control-Expose-Headers列出者, 未列則client讀到空字串而使download整條失效;
-                    //本套件以serverHapi將此伺服器交予WConverhpServer, 依其契約須由外部提供者自行設定, 用additional以保留hapi預設兩項
-                    additionalExposedHeaders: ['Return-Type', 'Return-Msg', 'Return-Retryable', 'Content-Disposition'],
-                },
+    //emitError, 建構期間之error先暫存, 待建構子回傳後才依序轉出
+    //why: 建構期間下游可能同步emit error(例如w-serv-webdata於useDbOrm=true而kpOrm無效時), 此時使用端尚未能監聽, 而evem為eventemitter3, 無監聽之error不拋亦不保留而直接遺失; 比照w-converhp之evEmitDelay
+    //經wsemi之evEmit發出, 使用端error監聽器之同步拋錯由其攔截(改以console.error輸出): 轉出位於計時器、啟動失敗之catch與stop之內, 直接emit時其拋錯即成uncaughtException或未處理之rejection而使行程崩潰, stop亦不再恆resolve
+    //無error監聽者時改以console.error輸出(CLAUDE_rulebook.md之R11)
+    //why: 本套件常駐之轉送監聽(instWConverServer.on('error'))使下層判定有人在聽, 不再走其無監聽者即console.error之處置, 外層無人聽時即遺失而使下層本會印出之錯誤靜默
+    let constructing = true
+    let errsPending = []
+    let emitError = (err) => {
+        if (constructing) {
+            errsPending.push(err)
+            return
+        }
+        if (ev.listenerCount('error') === 0) {
+            console.error('[w-serv-hapi]', err)
+            return
+        }
+        evEmit(ev, 'error', [err], { tag: 'w-serv-hapi' })
+    }
+
+    //cors, corsOrigins為空(停用跨域)時給予false, hapi即不回應CORS標頭
+    let cors = false
+    if (corsOrigins.length > 0) {
+        cors = {
+            origin: corsOrigins, //Access-Control-Allow-Origin
+            credentials: false, //Access-Control-Allow-Credentials
+            //additionalExposedHeaders, w-converhp之回應協定除本體外另靠此四個標頭傳成敗(Return-Type/Return-Msg)、可否重試(Return-Retryable)與檔名(Content-Disposition),
+            //瀏覽器對跨來源回應只讓JS讀Access-Control-Expose-Headers列出者, 未列則client讀到空字串而使download整條失效;
+            //本套件以serverHapi將此伺服器交予WConverhpServer, 依其契約須由外部提供者自行設定, 用additional以保留hapi預設兩項
+            additionalExposedHeaders: ['Return-Type', 'Return-Msg', 'Return-Retryable', 'Content-Disposition'],
+        }
+    }
+
+    //server, Hapi.Server於同步段建構, 非法之伺服器選項由hapi同步拋出
+    let server = new Hapi.Server({
+        port,
+        routes: {
+            timeout: {
+                server: false, //關閉伺服器超時
+                socket: false, //關閉socket超時
             },
-        })
+            cors,
+        },
+    })
 
-        //useInert
+    //instWConverServer, WConverhpServer於外部serverHapi模式下為全同步建構(同步掛路由, 不register Inert, 不start)
+    //corsOrigins不轉傳: w-converhp只於自建伺服器時使用之, serverHapi模式下為死傳
+    let instWConverServer = new WConverhpServer({
+        serverHapi: server,
+        apiName: get(opt, 'apiName'),
+        pathUploadTemp: get(opt, 'pathUploadTemp'),
+        tokenType: get(opt, 'tokenType'),
+        sizeSlice: get(opt, 'sizeSlice'),
+        sizeMsg: get(opt, 'sizeMsg'),
+        verifyConn: get(opt, 'verifyConn'),
+        delayForSlice: get(opt, 'delayForSlice'),
+    })
+
+    //error, 須先於w-serv-webdata之建構掛上; w-serv-webdata、w-serv-broadcast、w-sync-webdata皆於同一事件物件上擴充, 故掛一次即涵蓋各層之error
+    instWConverServer.on('error', emitError)
+
+    //clientChange, 由w-serv-broadcast於同一事件物件派發(w-converhp本身僅派發execute、upload、download、handler、error)
+    instWConverServer.on('clientChange', function(num) {
+        if (useShowLog) {
+            console.log(`Server[port:${port}]: now clients: ${num}`)
+        }
+    })
+
+    //clearDownstream, 釋放下游於同一事件物件上所建立之資源, 皆可重複呼叫:
+    //clearBroadcast清除w-serv-broadcast之輪詢計時器(其於w-serv-webdata建構時即啟動); clearSync釋放資料同步: w-serv-webdata(1.1.10起)以同名包裝, 先移除其掛於kpOrm之change監聽, 再呼叫w-sync-webdata之clearSync取消待推播並將未落檔之時間戳寫入
+    //clearSync一律經w-serv-webdata所建構之同一事件物件呼叫(與w-sync-webdata主責agent確認之路徑); 名稱不可為stop, 因w-converhp已於同一物件掛stop
+    //下游之清理失敗以error事件轉出, 不中斷其餘清理, 使stop恆resolve
+    let clearDownstream = () => {
+        for (let name of ['clearBroadcast', 'clearSync']) {
+            if (isfun(instWConverServer[name])) {
+                try {
+                    instWConverServer[name]()
+                }
+                catch (err) {
+                    emitError(err)
+                }
+            }
+        }
+    }
+
+    //WServWebdataServer, 同步建構: 設定錯誤(例如useDbOrm為true而缺authorizeExec)由w-serv-webdata同步拋出, 直接傳給使用端
+    //why 同步: 原於async流程內建構, 其拋錯被轉為error事件且伺服器不啟動, 使用端只見程序存活而伺服器未起
+    //選項整包轉傳, 使w-serv-webdata新增之選項無須本套件逐項列舉(本套件曾因逐項列舉而漏轉authorizeExec)
+    //拋錯前之計時器清理由w-serv-webdata負責(1.1.8起於拋錯前停止廣播計時器), 本套件不重複處理
+    instWConverServer = new WServWebdataServer(instWConverServer, {
+        ...opt,
+        fpTableTags,
+    })
+
+    //不註冊process之unhandledRejection與uncaughtException監聽
+    //why: 函式庫於宿主程序註冊此二監聽, 會把整個程序之未捕捉錯誤改成只印log不終止, 等於劫持使用端之全域錯誤語意(同w-package-tools之worker樣板所定);
+    //原於每次建構各註冊一組, 建構失敗亦累增, 且前一實例之監聽會吞掉後一實例建構時之同步拋錯. 全域錯誤政策由使用端自行決定
+
+    //pmFlush, 建構子回傳後才轉出建構期間暫存之error
+    //先resolve: 即使使用端之error監聽拋錯, 啟動亦不因此懸置; 其後之同步轉出仍先於start之接續執行
+    let pmFlush = new Promise((resolve) => {
+        setTimeout(() => {
+            constructing = false
+            resolve()
+            let errs = errsPending
+            errsPending = []
+            for (let err of errs) {
+                emitError(err)
+            }
+        }, 1)
+    })
+
+    //start, 非同步段: register Inert須await, 而含inert handler(directory)之路由須於其後才能掛, 故靜態路由與apis一併於此
+    let started = false
+    let start = async () => {
+
+        //等建構期間之error轉出後才啟動, 使ready之結果必晚於建構期之error
+        //why: listen可能於轉出計時器到期前即完成, 致使用端await ready後尚未收到建構期之error
+        await pmFlush
+
+        //register inert
         if (useInert) {
-
-            //register inert
             await server.register(Inert)
-
         }
 
         //apiRoutes
@@ -480,17 +498,6 @@ function WServHapiServer(opt = {}) {
                         }
                     },
                 },
-                // {
-                //     method: 'GET',
-                //     path: '/api/someAPI',
-                //     handler: async function (req, res) {
-
-                //         // //token
-                //         // let token = _.get(req, 'query.token', '')
-
-                //         return 'someAPI'
-                //     },
-                // },
             ]
         }
         apiRoutes = [
@@ -498,134 +505,65 @@ function WServHapiServer(opt = {}) {
             ...apis,
         ]
 
-        //route apiRoutes
+        //route apiRoutes, 與w-converhp已掛之通訊路由衝突時於此拋錯
         server.route(apiRoutes)
-
-    }
-
-    //createWConverhpServer
-    let createWConverhpServer = async () => {
-
-        //WConverhpServer
-        instWConverServer = new WConverhpServer({
-            serverHapi: server,
-            apiName,
-            pathUploadTemp,
-            tokenType,
-            sizeSlice,
-            sizeMsg,
-            verifyConn,
-            corsOrigins,
-            delayForSlice,
-        })
-        //clientChange, 由w-serv-broadcast於同一事件物件派發(w-converhp本身僅派發execute、upload、download、handler、error)
-        instWConverServer.on('clientChange', function(num) {
-            if (useShowLog) {
-                console.log(`Server[port:${port}]: now clients: ${num}`)
-            }
-        })
-
-    }
-
-    //createWServWebdataServer
-    let createWServWebdataServer = async () => {
-
-        // //tableNamesExec, tableNamesSync
-        // let tableNamesExec = keys(ds)
-        // let tableNamesSync = filter(tableNamesExec, (v) => {
-        //     return strright(v, 5) !== 'Items'//不同步數據
-        // })
-
-        //WServWebdataServer
-        instWConverServer = new WServWebdataServer(
-            instWConverServer,
-            {
-
-                getUserIdByToken,
-                // getUserIdByToken: (token) => {
-                //     return 'id-for-admin'
-                // },
-
-                useDbOrm,
-                kpOrm,
-                operOrm, //funORMProc的輸入為: userId, tableName, methodName, input
-                // operOrm: procCommon, //funORMProc的輸入為: userId, tableName, methodName, input
-
-                tableNamesExec,
-                tableNamesSync,
-
-                methodsExec, //methodsExec可提供select, insert, save, del, mix, mix需於procCommon內註冊以提供
-                // methodsExec: ['select', 'insert', 'save', 'del', 'mix'], //mix需於procCommon內註冊以提供
-
-                kpFunExt, //註冊擴充函數
-                // kpFunExt: {
-                //     getUserById,
-                //     // downloadAnalysisResultByKey,
-                // },
-
-                fpTableTags,
-                genTag,
-
-            })
-
-        //共用instWConverServer, 故最後再監聽error與用ev.emit至外部
-        instWConverServer.on('error', (err) => {
-            ev.emit('error', err)
-        })
-
-    }
-
-    //create
-    let create = async () => {
-
-        //createHapiServer
-        await createHapiServer()
-
-        //createWConverhpServer
-        await createWConverhpServer()
-
-        //createWServWebdataServer
-        await createWServWebdataServer()
 
         //start
         await server.start()
+        started = true
         if (useShowLog) {
             console.log(`Server running at: ${server.info.uri}`)
         }
 
+        return server
     }
-    create()
-        .catch((err) => {
-            ev.emit('error', err) //用ev.emit至外部
-        })
-
-    //攔截非預期錯誤
-    process.on('unhandledRejection', (err) => {
-        console.log('unhandledRejection', err) //強制顯示
-        ev.emit('error', { mode: 'unhandledRejection', err }) //用ev.emit至外部
-    })
-    process.on('uncaughtException', (err) => {
-        console.log('uncaughtException', err) //強制顯示
-        ev.emit('error', { mode: 'uncaughtException', err }) //用ev.emit至外部
+    let pmStart = start()
+    pmStart.catch((err) => {
+        clearDownstream() //啟動失敗則不再服務, 釋放下游資源使行程可自行結束
+        emitError(err)
     })
 
-    //getServer
+    //ready, 伺服器啟動成功時resolve為hapi伺服器實體, 失敗時以原錯誤reject
+    //why: hapi於listen之前即設定info.started且失敗時不歸零, 無法以其判定是否已啟動
+    let ready = () => {
+        return pmStart
+    }
+
+    //stop, 等啟動結束(成功或失敗)後才停, 恆resolve, 失敗以error事件通知
+    //why 須等啟動結束: hapi於啟動階段拒絕stop, 而伺服器其後照樣起來並持續服務
+    let pmStop = null
+    let stop = () => {
+        if (pmStop !== null) {
+            return pmStop
+        }
+        pmStop = (async () => {
+            await pmStart.catch(() => {})
+            clearDownstream()
+            if (started) {
+                try {
+                    await server.stop()
+                }
+                catch (err) {
+                    emitError(err)
+                }
+            }
+        })()
+        return pmStop
+    }
+
+    //getServer, 回傳hapi伺服器實體, 不保證已啟動(確認啟動請用ready)
     let getServer = async () => {
-        await waitFun(() => {
-            return server !== null
-        })
         return server
     }
 
-    //getInstWConverServer
+    //getInstWConverServer, 回傳經w-serv-webdata擴充後之通訊實體
     let getInstWConverServer = async () => {
-        await waitFun(() => {
-            return instWConverServer !== null
-        })
         return instWConverServer
     }
 
     //save
+    ev.ready = ready
+    ev.stop = stop
     ev.getServer = getServer
     ev.getInstWConverServer = getInstWConverServer
 
@@ -648,7 +586,7 @@ export default WServHapiServer
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Oct 11 2026 15:51:21 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Oct 14 2026 02:13:06 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

@@ -34,6 +34,14 @@ let alloc = [
     ['api-exec', 1, ''],
     ['api-cors', 1, ''],
     ['api-table-tags', 2, 'fpTableTags 與舊名 fnTableTags 各起一台'],
+    ['api-authorize', 1, ''],
+    ['api-options', 13, '各設定情境各起一台; 第2個供建構即同步拋錯之情境共用(不綁定); 第10個供子行程之啟動失敗情境; 第11個供stop之釋放情境(釋放資料同步、時間戳補寫、補寫失敗、下游清理拋錯, 依序共用); 第12個供子行程之前端輪詢過後stop情境'],
+    ['api-sync-authorize', 1, ''],
+    ['api-exposure', 13, '第0個供建構即同步拋錯之情境共用(不綁定); 第1至4個供useInert與pathStaticFiles; 第5至12個供corsOrigins各值'],
+    ['api-verify-upload', 3, '未註冊upload監聽、註冊upload監聽、verifyConn非函數各起一台'],
+    ['api-client-wait-token', 2, '取得token後建立資料同步、等待期間取得之停止函數參照各起一台'],
+    ['api-error-listener', 2, '供子行程: 建構期error、啟動失敗(以net佔用)各一; 未掛error監聽之伺服端情境依序共用(第0個起伺服器、第1個供路由衝突而不綁定)'],
+    ['api-client-stop', 5, '供子行程之前端停止情境: 取得函數清單後、首次輪詢成功時、同步表select在途時各一; 第3個供$fapi在途; 第4個供先停伺服器之情境'],
 ]
 
 //segs, 依 alloc 之順序自 base 起連續配發

@@ -83,6 +83,10 @@ async function client() {
         console.log(err)
     })
 
+    //停止(例如登出時): clearBroadcast與clearSync兩者皆須呼叫, 之後再停止伺服器
+    // instWServHapiClient.clearBroadcast()
+    // instWServHapiClient.clearSync()
+
 }
 client()
 

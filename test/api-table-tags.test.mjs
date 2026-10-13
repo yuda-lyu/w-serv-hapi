@@ -1,6 +1,6 @@
 import assert from 'assert'
 import fs from 'fs'
-import { waitFor, startServer } from './api-setup.mjs'
+import { tempFolderOf, waitFor, startServer } from './tools/api-setup.mjs'
 import wPorts from './tools/ports.mjs'
 
 let { portOf } = wPorts
@@ -42,7 +42,7 @@ describe('api-table-tags', function() {
     })
 
     it('舊名fnTableTags應相容而指向同一落點', async function() {
-        let fd = './tmp/test-table-tags-fn'
+        let fd = tempFolderOf('table-tags-fn')
         let srv = await startServer({
             name: 'table-tags-fn',
             port: portOf('api-table-tags', 1),

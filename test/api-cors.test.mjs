@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { startServer } from './api-setup.mjs'
+import { startServer } from './tools/api-setup.mjs'
 import wPorts from './tools/ports.mjs'
 
 let { portOf } = wPorts
@@ -28,7 +28,9 @@ describe('api-cors', function() {
     })
 
     after(async function() {
-        await srv.stop()
+        if (srv) {
+            await srv.stop()
+        }
     })
 
     it('回應應曝露w-converhp協定所需之四個標頭', async function() {

@@ -1,6 +1,6 @@
 import assert from 'assert'
 import size from 'lodash-es/size.js'
-import { waitFor, startServer, startClient } from './api-setup.mjs'
+import { waitFor, startServer, startClient } from './tools/api-setup.mjs'
 import wPorts from './tools/ports.mjs'
 
 let { portOf } = wPorts
@@ -58,8 +58,12 @@ describe('api-exec', function() {
     })
 
     after(async function() {
-        cli.stop()
-        await srv.stop()
+        if (cli) {
+            cli.stop()
+        }
+        if (srv) {
+            await srv.stop()
+        }
     })
 
     it('函數清單應恰為tableNamesExec各表與kpFunExt各函數', function() {

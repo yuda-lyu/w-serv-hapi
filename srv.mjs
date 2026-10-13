@@ -143,9 +143,18 @@ async function run() {
         getUserIdByToken: async (token) => { //可使用async或sync函數
             return 'id-for-admin'
         },
-        useDbOrm: true,
+        useDbOrm: true, //開啟資料通道, 此時operOrm、tableNamesExec、authorizeExec為必填
         kpOrm,
         operOrm: procCommon, //procCommon的輸入為: userId, tableName, methodName, input
+        authorizeExec: async ({ userId, tableName, methodName, input }) => { //可使用async或sync函數, 預設拒絕, 回傳嚴格等於true才放行
+            if (userId !== 'id-for-admin') {
+                return false //取不到使用者時userId為空字串, 一律拒絕
+            }
+            if (tableName === 'tabB' && methodName !== 'select') {
+                return false //tabB僅供讀取
+            }
+            return true
+        },
         tableNamesExec,
         methodsExec: ['select', 'insert', 'save', 'del'],
         tableNamesSync,
@@ -154,13 +163,16 @@ async function run() {
             add,
             //...
         },
-        // fnTableTags: 'tableTags-serv-hapi.json',
+        // fpTableTags: 'tableTags-serv-hapi.json',
         genTag,
     })
 
     wsrv.on('error', (err) => {
         console.log(err)
     })
+
+    //停止: 宜先停止前端(其clearBroadcast與clearSync), 再停止伺服器; stop恆resolve, 停止為終態
+    // await wsrv.stop()
 
 }
 run()
