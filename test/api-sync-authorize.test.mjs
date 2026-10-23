@@ -15,7 +15,10 @@ describe('api-sync-authorize', function() {
     let port = portOf('api-sync-authorize')
     let srv = null
     let cli = null
-    let token = 'token-admin'
+
+    //denied, 以授權函數之回應模擬「無權限」(token與身分全程不變)
+    //why 不以中途換token模擬: 輪詢之身分與clientId綁定(w-serv-webdata 1.1.16起), 同一前端連線中途換成他人或無身分者, 輪詢會被拒絕而收不到表變更之推播, 測到的是歸屬而非select被拒
+    let denied = false
 
     let seed = {
         tabA: [
@@ -45,7 +48,7 @@ describe('api-sync-authorize', function() {
             tableNamesSync: ['tabA'],
             seed,
             authorizeExec: ({ userId }) => {
-                return userId === 'id-for-admin'
+                return userId === 'id-for-admin' && !denied
             },
             optServer: {
                 getUserIdByToken: (t) => {
@@ -57,7 +60,7 @@ describe('api-sync-authorize', function() {
             port,
             optClient: {
                 getToken: () => {
-                    return token
+                    return 'token-admin'
                 },
             },
         })
@@ -80,7 +83,7 @@ describe('api-sync-authorize', function() {
     })
 
     it('select被拒時前端應發出帶表名與原拒絕值之error, 且不呼叫recvData', async function() {
-        token = 'token-guest'
+        denied = true
         let nRecv = cli.recvs.length
         await srv.kpOrm.tabA.save({ id: 'id-tabA-peter', name: 'peter', value: 'v-guest' })
         await waitFor(() => {
@@ -93,7 +96,7 @@ describe('api-sync-authorize', function() {
     })
 
     it('權限恢復後之資料表變更應可再同步取得', async function() {
-        token = 'token-admin'
+        denied = false
         await srv.kpOrm.tabA.save({ id: 'id-tabA-peter', name: 'peter', value: 'v-admin' })
         await waitFor(() => {
             return valuesOfRecv().includes('v-admin')

@@ -16,6 +16,40 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 * `w-serv-hapi-server`: for nodejs server
 * `w-serv-hapi-client`: for nodejs and browser client
 
+## Identity verification
+`w-serv-hapi` does not verify tokens. It only calls the functions you inject at each gate; when a function is not injected, the default is to allow or to treat the caller as having no identity (`verifyConn` not given allows every connection, `getUserIdByToken` defaults to returning an empty string). You must verify completely on your own:
+* `verifyConn`: verifies the token of the connection (the user exists in your system, is enabled, and is authorized by the deployer).
+* `getUserIdByToken`: resolves the executing identity from the token the frontend sends (the value of the frontend `getToken`, carried in the fixed key `__sysToken__` of every request, including the polling of the realtime synchronization; the polling of a frontend component published earlier carries no token, is treated as having no identity, and is not looked up). **This is the step that verifies the identity**, so it must be as complete as `verifyConn`: do not only decode the token or only look up the id. The token of this function comes from the request body, a different source than the one `verifyConn` verifies, so both identities must be fully verified.
+* `authorizeExec`: authorizes table operations (denied by default; allow by an explicit whitelist of methods).
+* `apis` routes do not pass through `verifyConn`, and `kpFunExt` functions do not pass through `authorizeExec`: guard each of them yourself, including role or membership checks at the function level.
+* `sysFuncsPublic`: decides which system functions (`[sys:getFuncList]`, `[sys:getTableTags]`, `[sys:polling]`) may be called without an identity (see Upgrade Notes).
+
+## Upgrade Notes
+
+### w-serv-webdata ^1.1.16: system functions, `sysFuncsPublic` (compatible default)
+`w-serv-hapi` forwards the new option `sysFuncsPublic` to `w-serv-webdata` as is (the whole option object is forwarded; nothing is defaulted or validated by `w-serv-hapi`).
+* **Default is unchanged: all three system functions are public.** When `sysFuncsPublic` is not given (undefined or null), a frontend without a token, and frontends built with components published earlier (whose polling carries no token), still bind, synchronize tables and receive pushes exactly as before.
+* **Recommended: set it explicitly** once your frontend uses a component that carries the token (the frontend `getToken` is also called for every polling round and its value is sent in `__sysToken__`). With `sysFuncsPublic: ['[sys:getFuncList]']`, a caller without a valid identity cannot get the table timestamps (`[sys:getTableTags]`) or the broadcasts (`[sys:polling]`), while a caller with a valid token works as usual. A caller without an identity is answered with a fixed `permission denied` message (polling: `[sys:polling] permission denied`), and the reason is reported through the server `error` event (`{ msg: 'permission denied', func }`; polling: `{ msg: '[sys:polling] permission denied', err: 'empty userId' }`). If `getUserIdByToken` throws or rejects, the call is always rejected, even for a function listed in `sysFuncsPublic`: an ordinary call is answered with the rejected value (and the value is reported through the `error` event), while polling is answered with the same fixed message and reported as `{ msg: '[sys:polling] verifyPolling error', err: <the value> }`.
+* A deployment whose `getUserIdByToken` always returns an empty string (for example a single sign-on service whose login page is used before logging in) must keep the default, or list exactly the system functions that the not-logged-in frontend needs and that carry nothing sensitive.
+* A value that is given but invalid (not an array, or an element that is not one of the three system function names) throws synchronously at construction (`invalid opt.sysFuncsPublic`, `invalid opt.sysFuncsPublic[0]`, ...); it never falls back to the default (`null` counts as not given). An empty array is valid and means every system function, including the function list, needs an identity. The array is copied at construction; changing it afterwards has no effect.
+* The gate is independent of `useDbOrm`.
+
+```alias
+let wsrv = new WServHapiServer({
+    //...
+    getUserIdByToken: async (token) => { //fully verify the token, return the user id, or '' when there is no identity
+        return await verifyAndGetUserId(token)
+    },
+    sysFuncsPublic: ['[sys:getFuncList]'], //recommended once the frontend sends the token
+})
+```
+
+### Changing identity needs a new frontend connection
+The identity of the polling is bound to the `clientId` of the frontend connection. If the `getToken` of a connected frontend starts returning the token of **another** user, the polling of that connection is rejected (server `error` reason `clientId belongs to another userId`) and no pushes arrive, until the old binding is released when that `clientId` goes offline (about 10 seconds after its last accepted polling; in our check the polling was accepted again under the new identity after about 9 seconds, and a table change made inside that window was never delivered afterwards). The binding is by user, not by token: another token of the **same** user changes nothing. With the default (all three public), a frontend that started without a token is also bound (to the empty identity), so logging in on the same connection is rejected the same way. With `sysFuncsPublic: ['[sys:getFuncList]']`, a connection that loses its token is rejected by the gate itself (reason `empty userId`) and stays rejected. To change identity (for example log out, then log in as another user), reload the page or stop the frontend (`clearBroadcast` and `clearSync`) and create a new `WServHapiClient`; do not only change what `getToken` returns.
+
+### Dependencies
+`w-serv-webdata` is now required at `^1.1.16` (which requires `w-serv-broadcast` `^1.1.11`).
+
 ## Installation
 
 ### Using npm(ES6 module):
@@ -433,7 +467,7 @@ client()
 
 Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.1.7/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.1.8/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
