@@ -17,13 +17,13 @@
 | port、corsOrigins、useInert、pathStaticFiles、apis、useShowLog | 本套件自用 | 已套:本地預設與檢核;有給而無效之處置見 R9(corsOrigins、useInert、pathStaticFiles 同步拋錯;port 依 R5 取預設;apis、useShowLog 取預設) |
 | fpTableTags(含舊名 fnTableTags) | 本套件處理舊名相容後轉傳 | 刻意:舊名相容須在本套件 |
 | apiName、pathUploadTemp、tokenType、sizeSlice、sizeMsg、verifyConn、delayForSlice | 轉傳 w-converhp | 已套:原樣轉傳(2026-10-13 兩名審查者以 22–23 個邊界值實測與原本之本地預檢最終值零差異) |
-| w-serv-webdata 之全部選項 | 轉傳 w-serv-webdata | 已套:`{ ...opt, fpTableTags }` 整包轉傳(含 1.1.16 起之 `sysFuncsPublic`:預設與檢核由下游單一擁有,本套件不訂,見 R13) |
+| w-serv-webdata 之全部選項 | 轉傳 w-serv-webdata | 已套:`{ ...opt, fpTableTags }` 整包轉傳(含 1.1.16 起之 `sysFuncsPublic`:預設與檢核由下游單一擁有,本套件不訂,見 R13;1.1.18 起之 `logDetail`、`funLog`,見 R14) |
 | corsOrigins → w-converhp | 不轉傳 | 刻意:w-converhp 只於自建伺服器時使用,serverHapi 模式下為死傳 |
 | `src/WServHapiClient.mjs` 之 url、apiName、tokenType、sizeSlice、timeout、retryMain、retryUpload、retryDownload | 轉傳 w-converhp 前端 | 已套(2026-10-13):原樣轉傳.零差異由靜態控制流證明:各選項 w-converhp 之有效集合皆為原本地有效集合之子集(同一謂詞,或另加 `useLimitSafe`、`<= maxTimer`、上限截斷),且預設值相同,故對任一輸入 v,w-converhp(本地(v)) = w-converhp(v) |
 | `src/WServHapiClient.mjs` 之 w-serv-webdata 前端選項 | 轉傳 w-serv-webdata 前端 | 已套(2026-10-13):`{ ...opt, getToken, getServerMethods, recvData }` 整包轉傳(原逐項列舉 7 個).getServerMethods、recvData 於下游為必填,由本套件提供預設;getToken 本套件等待 token 時自用 |
-| 前端四個回調函數(getRefreshState 等)之檢核 | 由 w-serv-webdata 擁有,本套件先行以同規則檢核 | 刻意:useWaitToken=true 時 w-serv-webdata 延後至取得 token 才建構,不先檢核則設定錯誤晚於建構才出現(R10).兩處一致由 `test/unit-client-init.test.mjs` 之行為比對守住(下游前端於建構時拋錯之每個選項與無效值,本套件 useWaitToken=true 時須同步拋出同一訊息,下游新增選項自動納入) |
+| 前端四個回調函數(getRefreshState 等)及 1.1.18 起之 `logDetail`(有給須為布林)、`funLog`(有給須為函數)之檢核 | 由 w-serv-webdata 擁有,本套件先行以同規則檢核 | 刻意:useWaitToken=true 時 w-serv-webdata 延後至取得 token 才建構,不先檢核則設定錯誤晚於建構才出現(R10).兩處一致由 `test/unit-client-init.test.mjs` 之行為比對守住(下游前端於建構時拋錯之每個選項與無效值,本套件 useWaitToken=true 時須同步拋出同一訊息,下游新增選項自動納入) |
 
-**測試**:`test/unit-optDoc.test.mjs`(本套件伺服端與前端之 JSDoc 須列出 w-serv-webdata 對應端之全部選項,下游新增選項即轉紅;2026-10-24 w-serv-webdata 1.1.16 新增 `sysFuncsPublic` 時即轉紅,補 JSDoc 後轉綠);`test/api-options.test.mjs`(未給 useDbOrm、非布林 useDbOrm);`test/unit-client-init.test.mjs`(前端回調函數檢核之行為比對);`test/api-sys-funcs.test.mjs`(`sysFuncsPublic` 之轉傳,見 R13).
+**測試**:`test/unit-optDoc.test.mjs`(本套件伺服端與前端之 JSDoc 須列出 w-serv-webdata 對應端之全部選項,下游新增選項即轉紅;2026-10-24 w-serv-webdata 1.1.16 新增 `sysFuncsPublic` 時即轉紅,補 JSDoc 後轉綠);`test/api-options.test.mjs`(未給 useDbOrm、非布林 useDbOrm);`test/unit-client-init.test.mjs`(前端回調函數檢核之行為比對);`test/api-sys-funcs.test.mjs`(`sysFuncsPublic` 之轉傳,見 R13);`test/api-diaglog.test.mjs`(`logDetail`、`funLog` 之轉傳,見 R14).
 
 ## R2 設定錯誤於建構時同步拋出;環境與啟動錯誤經 error 事件與 ready() reject
 
@@ -248,6 +248,27 @@
 
 **測試**:`test/api-sys-funcs.test.mjs`(新,27 案,port 8 個)、`test/api-sync-authorize.test.mjs`(改以授權函數模擬無權限)、`test/unit-optDoc.test.mjs`.
 
+## R14 診斷輸出選項(logDetail、funLog)由下游單一擁有,原樣轉傳;前端於 useWaitToken=true 時先行檢核(2026-10-28)
+
+**規則**:
+
+1. w-serv-webdata 1.1.18 起之 `opt.logDetail`(布林,預設 false:診斷輸出只含固定標籤與不含資料值、使用者 id、token、錯誤原文之摘要;true 還原完整細節)、`opt.funLog(label, safe, detail)`(給予時診斷輸出只交給它而不寫 console)為只負責轉傳之選項(R1):伺服端 `{ ...opt, fpTableTags }`、前端 `{ ...opt, getToken, getServerMethods, recvData }` 整包轉傳,本套件不訂預設.token 一律遮罩為 `[token]`(下游契約).
+2. 前端 `useWaitToken=true` 時 w-serv-webdata 延後至取得 token 才建構,故 `logDetail`(有給非 undefined、null 須為布林)與 `funLog`(有給須為函數)與四個回調函數同理由本套件先行檢核,拋 `invalid opt.logDetail`、`invalid opt.funLog`(不論 useWaitToken).未先行檢核時無效值晚於建構才以 error 事件出現,`unit-client-init` 之行為比對自下游前端 JSDoc 取選項名,新增選項即轉紅(2026-10-28 實際轉紅).
+3. JSDoc 兩端各列 `@param opt.logDetail`、`@param opt.funLog`,載明預設不含個資,並載明其僅涵蓋 w-serv-webdata 自身之診斷輸出,不涵蓋本套件與其他下層之 console.error 輸出(L15).
+
+**why**:2026-10-28 w-serv-webdata 1.1.18 新增二選項(診斷輸出預設改為不含個資);本套件原即整包轉傳,選項自動到達下游,只需文件(`unit-optDoc` 轉紅提醒)、先行檢核(`unit-client-init` 轉紅提醒)與行為測試.下游之診斷輸出站:前端回調函數於停止後才拋錯(`[w-serv-webdata] callback error after stop`)、伺服端 `instWConverServer` 非有效物件(經本套件建構恆為物件,不會觸發).
+
+**盤點**:`rg -n "console\.(log|error)\(" src/*.mjs`(本套件自身之輸出站,全集 6 處,見 L15);`rg -n "logDetail|funLog" src/*.mjs`(轉傳為整包 `...opt`,僅前端有先行檢核).
+
+| 站點 | 歸類 | 判準 |
+|---|---|---|
+| 伺服端 `{ ...opt, fpTableTags }`(`src/WServHapiServer.mjs` 之 new WServWebdataServer) | 轉傳 | 已套 |
+| 前端 `optWebdata = { ...opt, ... }`(`src/WServHapiClient.mjs`) | 轉傳 | 已套 |
+| 前端 logDetail、funLog 先行檢核 | 先行檢核 | 已套(同回調函數,見 R1 表) |
+| 伺服端 `new WServHapiServer` 之 logDetail、funLog 檢核 | 下游擁有 | 刻意不套(R1):下游於建構時同步拋錯 |
+
+**測試**:`test/api-diaglog.test.mjs`(8 案,port 2 個)——伺服端無效值同步拋錯與有效值不拋(伺服端於經本套件建構時無診斷輸出站,以此證明選項已到達下游);前端以 `recvData` 於前端停止後才拋錯觸發下游診斷輸出,三組(預設:只含標籤與摘要、不含錯誤原文與 token;`logDetail:true`:還原完整細節、token 遮罩;`funLog`:只交 funLog、不寫 console、detail 含原文且 token 遮罩)× `useWaitToken` 兩種;`test/unit-client-init.test.mjs` 之 logDetail、funLog 先行檢核(兩種 useWaitToken、無效值與 undefined、null、有效值)與下游行為比對;`test/unit-optDoc.test.mjs`.
+
 ## 測試總表(由規格衍生)
 
 | 檔案 | 驗證對象 | 規格來源 |
@@ -256,12 +277,13 @@
 | `test/api-authorize.test.mjs` | authorizeExec 擋在 operOrm 之前:放行、拒絕、非嚴格 true、reject 字串、空 userId、kpFunExt 不經授權、getUserIdByToken 拒絕 | JSDoc 之 authorizeExec、getUserIdByToken |
 | `test/api-sync-authorize.test.mjs` | 同步表之 select 被拒:前端發出帶表名與原拒絕值之 error、不呼叫 recvData;權限恢復後可再同步.無權限以授權函數之回應模擬(`denied` 旗標,token 與身分全程不變);不以中途換 token 模擬(輪詢之 clientId 歸屬會先擋下,R13 規則 3) | JSDoc 之 authorizeExec(轉述 w-serv-webdata 1.1.10 檔頭規則 4)、WServHapiClient 之 recvData |
 | `test/api-sys-funcs.test.mjs` | R13:`sysFuncsPublic` 之轉傳——未給與 null 時三者皆公開(無 token 前端、舊前端元件〔含 getUserIdByToken 對空 token 拒絕之 perm 型〕可綁定同步收推播);只公開 `[sys:getFuncList]` 時無 token 與無效 token 之 `[sys:getTableTags]`、`[sys:polling]` 被拒(伺服端 error 事件、前端不綁定)、有效 token 正常;其他子集(清單與時間戳、僅輪詢、空陣列且建構後修改原陣列不生效)與不開資料通道;getUserIdByToken reject 一律拒絕;換身分(他人、無身分與有身分互換、同一使用者換 token)之輪詢結果與重建前端連線;有給而無效 `new` 即同步拋錯 | JSDoc 之 sysFuncsPublic、getUserIdByToken;README〈Upgrade Notes〉 |
+| `test/api-diaglog.test.mjs` | R14:`logDetail`、`funLog` 之轉傳——伺服端無效值同步拋錯、有效值不拋;前端(兩種 useWaitToken)預設只輸出標籤與摘要、`logDetail:true` 還原完整細節、`funLog` 取代 console,皆 token 遮罩 | JSDoc 之 logDetail、funLog |
 | `test/api-options.test.mjs` | R2–R6;前端於取得函數清單後停止、間隔 500ms 再停伺服器,行程於伺服器 stop 後 2 秒內結束(原 L3,為 R12 之 P6×W2 回歸);三種 process 監聽(含 import 前後之子行程);下游清理拋錯、時間戳補寫與補寫失敗(R4、R12) | JSDoc 之 useDbOrm、kpOrm、kpFunExt、apis、port、@returns(stop) |
 | `test/api-client-stop.test.mjs` | R12:經本套件前端(retryMain=3)於各在途點停止前端、立即停伺服器,停止後 error 0 則、重試訊息 0 行、getToken 0 次、行程於伺服器 stop 後 500ms 內結束;同步表 select 在途時伺服器 stop 不等該連線;$fapi 在途照常完成 | 兩端之 @returns(停止);R12 |
 | `test/api-cors.test.mjs` | 曝露 w-converhp 協定之四個標頭、允許與不允許之來源 | JSDoc 之 corsOrigins、w-converhp 之 serverHapi 契約 |
 | `test/api-table-tags.test.mjs` | fpTableTags 落點、舊名 fnTableTags 相容 | JSDoc 之 fpTableTags |
 | `test/unit-optDoc.test.mjs` | R1 之文件涵蓋(伺服端與前端) | R1 |
-| `test/unit-client-init.test.mjs` | 前端函數型選項之同步拋錯(兩種 useWaitToken)、與 w-serv-webdata 前端檢核之行為比對、未給取預設、等待中以 clearBroadcast 或 clearSync 取消、等待逾 200 次仍持續、getToken 拋錯或 reject 一則 error 並停止、首次檢查之 error 送達 new 之後之監聽、promise 未結束不重疊呼叫且停止後其結果不作用;子行程:未給 getToken 同步拋錯無 rejection、等待中停止後行程自行結束 | WServHapiClient 之 JSDoc(useWaitToken、getToken、getServerMethods、recvData、各回調、@returns);R10 |
+| `test/unit-client-init.test.mjs` | 前端函數型選項及 logDetail、funLog 之同步拋錯(兩種 useWaitToken)、與 w-serv-webdata 前端檢核之行為比對、未給取預設、等待中以 clearBroadcast 或 clearSync 取消、等待逾 200 次仍持續、getToken 拋錯或 reject 一則 error 並停止、首次檢查之 error 送達 new 之後之監聽、promise 未結束不重疊呼叫且停止後其結果不作用;子行程:未給 getToken 同步拋錯無 rejection、等待中停止後行程自行結束 | WServHapiClient 之 JSDoc(useWaitToken、getToken、getServerMethods、recvData、各回調、@returns);R10 |
 | `test/api-client-wait-token.test.mjs` | useWaitToken=true:取得 token 前伺服器未收到輪詢;取得後於同一物件建立資料同步、取得函數清單並收到同步表資料;等待期間取得之停止函數參照於建立資料同步後仍停止輪詢 | WServHapiClient 之 JSDoc(useWaitToken、@returns);R10 |
 | `test/api-error-listener.test.mjs` | error 監聽器同步拋錯時行程不崩潰(子行程):伺服端建構期 error 後照常 ready 與 stop、伺服端啟動失敗時 ready 照常 reject 且 stop 照常 resolve、前端等待期 getToken 拋錯;未掛 error 監聽時以 `[w-serv-hapi]` 輸出至 stderr(子行程):伺服端之下層監聽器拋錯與自發之啟動失敗、前端自發之 getToken 拋錯 | 兩端之 @returns;R10 規則 5、R11 |
 | `test/unit-ports.test.mjs` | R7 | R7 |
@@ -351,6 +373,17 @@ R13(2026-10-24,`tmp/hapi-run01/run-mut.mjs` 於 `tmp/hapi-run01/mut` 之 src 與
 
 修前紅(2026-10-24,`tmp/hapi-run01/pre`:src 與 test 同現行,`node_modules` 內為升級前之 w-serv-webdata 1.1.15 + w-serv-broadcast 1.1.10,其餘相依向上解析):新測試 `api-sys-funcs` 27 案中 **22 紅 5 綠**——5 綠為鎖定相容之案(預設下無 token 前端、舊前端元件、同一使用者換 token、perm 型舊/新前端元件),修前後皆應綠;`api-sync-authorize` 3 案兩邊皆綠;`unit-optDoc` 在 1.1.15 為綠、裝 1.1.16 後轉紅(補 JSDoc 後綠).
 
+R14(2026-10-28,直接對 repo 之 src 逐一施變異後以 Edit 還原,還原後 `git diff -- src` 僅含預期之 JSDoc 與先行檢核;w-serv-webdata 1.1.18):
+
+| 變異 | 結果 |
+|---|---|
+| 前端拿掉 logDetail、funLog 先行檢核 | 被抓到:unit-client-init「logDetail有給但非布林值、funLog有給但非函數時…」(useWaitToken=true 時 logDetail 3 個、funLog 4 個無效值皆未拋)與下游行為比對案,共 2 紅 |
+| 伺服端 `...opt` 後覆蓋 `logDetail`、`funLog` 為 undefined | 被抓到:api-diaglog 伺服端兩案(無效值不拋)共 2 紅,前端案仍綠 |
+| 前端 `optWebdata` 覆蓋 `logDetail`、`funLog` 為 undefined | 被抓到:api-diaglog 前端 `logDetail:true`、`funLog` 兩組 × 兩種 useWaitToken 共 4 紅,伺服端案與預設組仍綠 |
+| JSDoc 缺 `@param opt.logDetail`、`opt.funLog`(未改碼時之實際狀態) | 被抓到:unit-optDoc 伺服端與前端各 1 紅 |
+
+修前紅(2026-10-28,w-serv-webdata 由 1.1.17 升 1.1.18、src 未改):全套 138 案 **135 綠 3 紅**——`unit-optDoc` 伺服端與前端各 1 紅(缺 `logDetail`、`funLog`)、`unit-client-init`「w-serv-webdata前端於建構時拋錯之選項, useWaitToken=true…」1 紅(`logDetail`、`funLog` 之無效值 `useWaitToken=true` 時未同步拋).修後 147 綠 0 紅(新增 8 + 1 案).
+
 ## 已知限制
 
 - **L2(設計事實)**:同步表之 select 須對所有連線者放行;被拒之前端取不到該表資料(既有資料維持不變),每次重抓皆發出 error.依 w-serv-webdata 1.1.10 檔頭規則 4,本套件 JSDoc 之 authorizeExec 已註明,`test/api-sync-authorize.test.mjs` 驗證.(1.1.8 時為「該表被清空且無 error」,1.1.10 改為現行為.)
@@ -364,8 +397,15 @@ R13(2026-10-24,`tmp/hapi-run01/run-mut.mjs` 於 `tmp/hapi-run01/mut` 之 src 與
 
 - **L13(設計事實,下游規則,2026-10-24)**:輪詢之身分與 clientId 綁定——同一前端連線(同一 clientId)中途改以他人身分(含預設下無身分與有身分互換)輪詢被拒(error 事件 `clientId belongs to another userId`;嚴格設定下由有身分變無身分則為 `empty userId`,見 R13 規則 3),被拒之輪詢不刷新在線身分,至舊綁定因該 clientId 逾時離線(w-serv-broadcast 在線逾時約 10 秒)解除;期間之表變更推播不補送.實測(w-serv-webdata 1.1.16 + w-serv-broadcast 1.1.12,只公開 `[sys:getFuncList]`,換身分後):第 1 至 5 次輪詢被拒(0.5、2.5、4.5、6.5、8.5 秒),其後放行,20 秒時之變更送達;換身分當時(1.5 秒)之變更 30 秒內未送達.換身分須重載頁面或重建前端連線,載於 JSDoc(sysFuncsPublic、前端 getToken)與 README.
 - **L14(設計事實)**:`sysFuncsPublic` 預設三者皆公開(相容),故未顯式設定之部署,無身分者仍可取得函數名稱清單、同步表時間戳並取走自己 clientId 之廣播;嚴格設定由使用方於前端改用帶 token 之元件後顯式為之(JSDoc、README、R13).本套件不訂預設(R1).
+- **L15(已知限制,待裁示,2026-10-28)**:`logDetail`、`funLog` 只涵蓋 w-serv-webdata 自身之診斷輸出;本套件自身之 console 輸出站全集 6 處(`rg -n "console\.(log|error)\(" src/*.mjs`),其中 2 處於無 error 監聽者時以 `console.error('[w-serv-hapi]', err)` **原樣輸出 error 事件值**,不經 `logDetail`、`funLog`:`src/WServHapiServer.mjs:337`(伺服端:hapi 之 Error〔啟動失敗、路由衝突,無個資〕,及下層轉送者——w-converhp 之訊息字串〔如 `verifyConn error for apiType[…]: <使用端錯誤訊息>`、`listener of event[…] error: …`〕、w-serv-broadcast 與 w-sync-webdata 之 `{msg, err}`〔可能含 `getUserIdByToken` 之原拒絕值〕)與 `src/WServHapiClient.mjs:319`(前端:`getToken` 之拋出值,可能夾帶 token;下層 `{msg, err}`)——內容視使用端函數之錯誤訊息而定,可能含 token、使用者 id、錯誤原文,且**本套件不遮罩**.其餘 4 處不含個資:`WServHapiServer.mjs:387`(連線數)、`:475`(伺服器 uri)、`WServHapiClient.mjs:366`、`:391`(固定文字 `waiting token...`、`get token`;`useShowLog` 控制).JSDoc 已載明此範圍與「宜掛 error 監聽」.是否改經 `logDetail`／`funLog` 出口(預設只輸出摘要)由主控裁示;下游 README 亦明訂此類輸出不在其涵蓋(使用端應對回傳之事件物件掛 error 監聽,且監聽器不可拋錯).
 
 ## 破壞性變更紀錄
+
+**2026-10-28(因應 w-serv-webdata 1.1.18;預設相容,對外行為不變)**
+
+- 依賴:w-serv-webdata 下限升為 `^1.1.18`(傳遞依賴 w-serv-broadcast 1.1.13、w-sync-webdata 1.1.9).
+- 新選項 `logDetail`、`funLog` 經整包轉傳到達下游(R1、R14):未給時行為與升級前相同(本套件無新增輸出);有給而無效時建構即同步拋錯(`invalid opt.logDetail`、`invalid opt.funLog`),前端於 `useWaitToken=true` 時亦同步拋出(本套件先行檢核).**升級後下游預設的前端診斷輸出(回調函數於停止後才拋錯)改為只輸出摘要,不再含錯誤本身**——需要原輸出者設 `logDetail: true`.
+- 測試:新增 `test/api-diaglog.test.mjs`(port 2 個)、`unit-client-init` 新增 1 案.文件:兩端 JSDoc 新增 `logDetail`、`funLog`.
 
 **2026-10-24(因應 w-serv-webdata 1.1.16 與 w-serv-broadcast 1.1.11–1.1.12;預設相容,行為不變)**
 

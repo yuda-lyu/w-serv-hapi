@@ -17,6 +17,9 @@
 - **對舊版下游跑對照組須設上限**:w-converhp 2.1.6 之伺服器無 upload 監聽時,官方 client 之 upload() 不會結束(2026-10-13 實測逾 2 分鐘而中止;依 w-converhp 之修正說明,舊版先傳完全部切片再無限輪詢合併).
 - **下游新增選項且預設相容時,本套件(整包轉傳)只需補文件與行為測試**(2026-10-24,w-serv-webdata 1.1.16 之 `sysFuncsPublic`):`unit-optDoc` 轉紅即提醒補 `@param`;行為測試要證明「轉傳到達」而非只證明下游自己正確——需有「所給之值不同,結果即不同」的多組設定(預設、只公開 getFuncList、公開 getFuncList 與 getTableTags)與有給而無效之同步拋錯,否則「固定轉傳某一組」或「吞掉」之變異抓不到.
 - **升下游時一併看傳遞依賴之鎖定版**:`npm i w-serv-webdata@^1.1.16` 不會更新已滿足 `^1.1.11` 之 w-serv-broadcast(留在 1.1.11),新安裝者卻取得 1.1.12;以 `npm update <傳遞依賴>` 只更新鎖檔與 node_modules 即可,不動 package.json.用「新安裝者實得之版本」測才與使用端一致.
+- **下游新增前端選項時,轉紅的不只 `unit-optDoc`**(2026-10-28,w-serv-webdata 1.1.18 之 `logDetail`、`funLog`):`unit-client-init` 之行為比對自下游前端 JSDoc 取選項名,對 `useWaitToken=true` 要求本套件同步拋出下游於建構時拋之同一訊息,新選項若有「有給而無效即拋錯」之檢核,必須同批在本套件前端先行檢核(R1 表、R14).升版後先跑全套看全部紅燈,不要只看提示詞列出的那條.
+- **證明「選項到達下游」要有下游實際產生輸出的觸發點**:`logDetail`、`funLog` 在伺服端經本套件建構時無診斷輸出站(僅 `instWConverServer` 非物件時有,本套件恆傳物件),只能以無效值之同步拋錯證明到達;前端以 `recvData` 於自身停止後才拋錯觸發下游輸出(`[w-serv-webdata] callback error after stop`),三組設定 × 兩種 `useWaitToken` 才能抓到「固定轉傳某值」「前端漏轉」之變異.擷取 console 時只在 `session` 內暫換 `console.error`,`finally` 還原.
+- **升下游後盤點本套件自身之 console 輸出站,別假設下游的出口涵蓋它**:`rg -n "console\.(log|error)\(" src/*.mjs` 全集 6 處,2 處(無 error 監聽者時 `console.error('[w-serv-hapi]', err)`)原樣輸出事件值,不經下游之 `logDetail`、`funLog`(L15).
 
 ## 事件與生命週期
 

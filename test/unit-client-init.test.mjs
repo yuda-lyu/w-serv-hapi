@@ -87,6 +87,31 @@ describe('unit-client-init', function() {
         assert.strict.deepEqual(rs, expected)
     })
 
+    it('logDetail有給但非布林值、funLog有給但非函數時建構即同步拋錯, undefined、null與有效值不拋, 不論useWaitToken', async function() {
+        //JSDoc: opt.logDetail、opt.funLog「有給(非undefined、null)但非…時建構即同步拋錯(不論useWaitToken)」
+        let rs = []
+        let expected = []
+        for (let useWaitToken of [false, true]) {
+            for (let v of [123, 'x', {}]) {
+                rs.push([useWaitToken, 'logDetail', v, throwOf(base({ useWaitToken, getToken: () => '', logDetail: v }))])
+                expected.push([useWaitToken, 'logDetail', v, 'invalid opt.logDetail'])
+            }
+            for (let v of [undefined, null, true, false]) {
+                rs.push([useWaitToken, 'logDetail', v, throwOf(base({ useWaitToken, getToken: () => '', logDetail: v }))])
+                expected.push([useWaitToken, 'logDetail', v, null])
+            }
+            for (let v of [123, 'x', true, {}]) {
+                rs.push([useWaitToken, 'funLog', v, throwOf(base({ useWaitToken, getToken: () => '', funLog: v }))])
+                expected.push([useWaitToken, 'funLog', v, 'invalid opt.funLog'])
+            }
+            for (let v of [undefined, null, () => {}]) {
+                rs.push([useWaitToken, 'funLog', typeof v, throwOf(base({ useWaitToken, getToken: () => '', funLog: v }))])
+                expected.push([useWaitToken, 'funLog', typeof v, null])
+            }
+        }
+        assert.strict.deepEqual(rs, expected)
+    })
+
     it('useWaitToken=true而未給getToken(undefined或null)時建構即同步拋錯', async function() {
         let rs = [
             throwOf(base({ useWaitToken: true })),

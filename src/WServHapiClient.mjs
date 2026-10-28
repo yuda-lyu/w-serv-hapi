@@ -29,6 +29,8 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @param {Function} [opt.getRefreshTable=null] 輸入取得資料表時間戳有變更通知的回調函數，傳入參數為{tableName,timeTag}，預設null
  * @param {Function} [opt.getBeforeUpdateTableTags=null] 輸入更新各資料表時間戳前的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null
  * @param {Function} [opt.getAfterUpdateTableTags=null] 輸入更新各資料表時間戳後的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null。上述四個回調函數原樣轉傳w-serv-webdata，有給但非函數時建構即同步拋錯(不論useWaitToken)
+ * @param {Boolean} [opt.logDetail=false] 輸入w-serv-webdata之診斷輸出是否還原為完整細節(含資料值與錯誤原文，供除錯)，原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要(例如回調函數於停止後才拋錯時，只輸出回調函數名稱與錯誤之類別、代碼)；token無論如何皆遮罩為'[token]'。有給(非undefined、null)但非布林值時建構即同步拋錯(不論useWaitToken)，預設false
+ * @param {Function} [opt.funLog=null] 輸入w-serv-webdata之診斷輸出函數(label, safe, detail)，原樣轉傳w-serv-webdata。給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(該錯誤之拷貝，含資料值與錯誤原文，token已遮罩；無細節者不傳)，供使用端遮罩或轉送至自己的日誌；其拋錯與回傳promise之reject皆被吞下，不影響本套件流程。有給(非undefined、null)但非函數時建構即同步拋錯(不論useWaitToken)。僅涵蓋w-serv-webdata自身之診斷輸出，不涵蓋本套件與其他下層之輸出：回傳之事件物件無error監聽者時，本套件改以console.error輸出其自發error之內容(例如getToken之拋出值)，宜掛上error監聽，預設null
  * @param {Boolean} [opt.useShowLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
  * @returns {Object} 回傳事件物件，為w-converhp之瀏覽器端事件物件，建立資料同步時由w-serv-webdata於同一物件上擴充，建構後即可使用(useWaitToken=true而尚在等待token時亦然)。可監聽error事件，本套件、w-converhp與w-serv-webdata各層之error皆於其上發出，內容依來源層而異：w-converhp為每次請求嘗試失敗之訊息字串，w-serv-broadcast為{msg,err}，w-sync-webdata為{msg,err,tableName,timeTag}或{msg,err}，本套件為getToken之拋出值；本套件自發之error(等待token期間getToken之拋錯)於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時，本套件與w-serv-broadcast、w-sync-webdata之error改以console.error輸出，w-converhp與w-serv-webdata之error不輸出；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)。設定錯誤(例如useWaitToken=true而未給getToken、回調函數有給但非函數)於建構時同步拋出；執行環境須具AbortController(停止時中止在途請求所需)，缺者useWaitToken=false時於建構時同步拋出，true時於取得token後發出error事件且不建立資料同步。停止時呼叫其clearBroadcast與clearSync，兩者皆須呼叫(只呼叫clearSync時輪詢照常進行，Node行程不會結束；只呼叫clearBroadcast時資料同步之下層照常運作，停止時在途之同步表請求被中止而由其發出一則帶表名之error)，建立資料同步後兩者為w-serv-webdata所提供；等待token期間呼叫任一者即取消等待，於等待期間取得之函數參照於建立資料同步後呼叫亦轉為w-serv-webdata之同名函數；皆可重複呼叫。兩者皆呼叫後不再送出本套件與下層自身之請求(輪詢、取得函數清單、時間戳與同步表資料)，停止時在途者一併中止：不再重試、不再發出其各次嘗試失敗之error、不再為其呼叫getToken，亦不再撐住Node行程(各層之條件：w-converhp 2.1.8、w-serv-broadcast 1.1.9、w-serv-webdata 1.1.12以上，本套件之相依已滿足；dist以建置時內嵌之版本為準)；伺服器已開始之處理照常完成而其結果忽略。停止為終態，不再恢復輪詢；使用端經getServerMethods所取得之函數於停止後仍可呼叫，且其呼叫與直接呼叫本物件之execute、upload、download者皆不受停止影響：照常完成或依retryMain等之重試後失敗，其間各次嘗試失敗之error仍於本物件發出；其中upload於合併階段之輪詢依w-converhp之設計持續至伺服器端應用接受為止，兩端皆停止後即無上界(error不止、promise懸置、Node行程不結束)，故execute、upload、download宜自帶opt.signal(例如AbortSignal.timeout)以便中止(見w-converhp)。建立資料同步後token失效(例如登出)不會回到等待，輪詢與請求持續失敗並發出error，請停止後另建新實體等待。宜先停止前端再停止伺服器：先停伺服器時，前端於停止前之輪詢失敗皆發出error事件。useShowLog只控制本套件自身之輸出，下層之輸出(例如w-converhp之重試訊息)不受其控制。回傳物件上下層所掛之其他函數(例如updateTableTags、pollingTableTags)非本套件之契約
  * @example
@@ -286,6 +288,14 @@ function WServHapiClient(opt = {}) {
     for (let name of ['getRefreshState', 'getRefreshTable', 'getBeforeUpdateTableTags', 'getAfterUpdateTableTags']) {
         funOpt(name, null)
     }
+
+    //logDetail, funLog, w-serv-webdata 1.1.18起之診斷輸出選項, 與上同理先行檢核(規則同其getOptLog: 未給即undefined或null, logDetail有給須為布林, funLog有給須為函數)
+    //why: useWaitToken=true時w-serv-webdata延後至取得token才建構, 不先檢核則無效值晚於建構才以error事件出現而與false時通道不同(unit-client-init之行為比對自其JSDoc取選項名, 新增選項即轉紅)
+    let logDetail = get(opt, 'logDetail')
+    if (logDetail !== undefined && logDetail !== null && !isbol(logDetail)) {
+        throw new Error('invalid opt.logDetail')
+    }
+    funOpt('funLog', null)
 
     //instWConverClient, w-converhp前端之事件物件, 其建構不連線亦不起計時器, 故於回傳前即建立: useWaitToken=true而等待token期間亦可監聽error並停止
     //轉傳選項原樣交w-converhp, 本套件不另訂預設與檢核(同伺服器端, 見CLAUDE_rulebook.md之R1)
