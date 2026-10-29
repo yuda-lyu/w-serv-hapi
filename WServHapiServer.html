@@ -83,7 +83,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line255">line 255</a>
+        <a href="WServHapiServer.mjs.html">WServHapiServer.mjs</a>, <a href="WServHapiServer.mjs.html#line257">line 257</a>
     </li></ul></dd>
     
 
@@ -1220,7 +1220,7 @@
                 </td>
             
 
-            <td class="description last"><p>輸入w-serv-webdata之診斷輸出是否還原為完整細節(含資料值與錯誤原文，供除錯)，原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要；token無論如何皆遮罩為'[token]'。有給(非undefined、null)但非布林值時建構即同步拋錯，預設false</p></td>
+            <td class="description last"><p>輸入w-serv-webdata之診斷輸出是否還原為完整細節(含資料值與錯誤原文，供除錯)，原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要；憑證與token(網址帳密、password、token、Authorization、Bearer等鍵值，及w-serv-webdata所記住之token)無論如何皆遮罩為'***'(由wsemi之getDiag提供，範圍與限制見w-serv-webdata之opt.logDetail)。有給(非undefined、null)但非布林值時建構即同步拋錯，預設false</p></td>
         </tr>
 
     
@@ -1260,7 +1260,47 @@
                 </td>
             
 
-            <td class="description last"><p>輸入w-serv-webdata之診斷輸出函數(label, safe, detail)，原樣轉傳w-serv-webdata。給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(含資料值與錯誤原文，token已遮罩；無細節者不傳)，供使用端遮罩或轉送至自己的日誌；其拋錯與回傳promise之reject皆被吞下，不影響本套件流程。有給(非undefined、null)但非函數時建構即同步拋錯。僅涵蓋w-serv-webdata自身之診斷輸出，不涵蓋本套件與其他下層之輸出：回傳之事件物件無error監聽者時，本套件改以console.error輸出error事件之內容(含下層送來者，可能夾帶資料值或錯誤原文)，宜掛上error監聽，預設null</p></td>
+            <td class="description last"><p>輸入w-serv-webdata之診斷輸出函數(label, safe, detail)，原樣轉傳w-serv-webdata。給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(含資料值與錯誤原文，憑證與token已遮罩為'<em><strong>'；無細節者不傳)，供使用端遮罩或轉送至自己的日誌；其拋錯與回傳promise之reject皆被吞下，不影響本套件流程。有給(非undefined、null)但非函數時建構即同步拋錯。僅涵蓋w-serv-webdata自身之診斷輸出，不涵蓋本套件與其他下層之輸出：回傳之事件物件無error監聽者時，本套件改以console.error輸出error事件之內容(含下層送來者)，該內容經wsemi之maskDiagErr遮罩憑證樣式(網址帳密、password、token、Authorization、Bearer等鍵值，遮罩為'</strong></em>')，不含者原樣；本套件不持有token與後端秘密，不認識之裸字串密碼與token不在保證內，錯誤原文與資料值仍可能出現，宜掛上error監聽(交給監聽器之值不經本套件遮罩)，預設null</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onTrace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>null</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>輸入觀察回調函數，格式為(e)=&gt;{}，供測試與診斷以事件(而非等待毫秒)同步，原樣轉傳w-serv-webdata(1.1.19起)，其再原樣轉交所包之w-serv-broadcast伺服端之opt.onTrace。事件種類(alive、prune、emit、deliver、report、stop)與欄位、時機及回調之契約(同步呼叫、e為凍結物件、拋錯與回傳之rejection皆忽略、未給或非函數時忽略)以w-serv-webdata與w-serv-broadcast之JSDoc為準，本套件不增減事件；w-sync-webdata之onTrace不轉交(同w-serv-webdata)，預設null</p></td>
         </tr>
 
     
@@ -1333,7 +1373,7 @@
 
         
 <div class="param-desc">
-    <p>回傳事件物件，可監聽error事件，涵蓋啟動失敗與執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)，內容依來源層而異(hapi之Error、w-converhp之訊息字串、w-serv-broadcast與w-sync-webdata之{msg,err})；建構期間發生者於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時改以console.error輸出(前綴[w-serv-hapi])；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)，亦不影響ready與stop之結果。設定錯誤(例如useDbOrm=true而未給authorizeExec、useInert有給但非布林值)於建構時同步拋出(w-serv-webdata之設定錯誤拋出時，pathUploadTemp資料夾可能已由w-converhp建立)。另提供：ready函數，回傳promise，伺服器啟動成功時resolve為hapi伺服器實體，啟動失敗(例如埠被占用、apis路由衝突)時以原錯誤reject；stop函數，回傳promise，等待啟動結束後依序釋放下游於同一事件物件上所建立之資源(w-serv-broadcast之輪詢計時器與在線偵測；資料同步：移除掛於kpOrm之change監聽、取消待推播之時間戳並將尚未落檔者寫入檔案，落檔失敗時發出error事件)再停止伺服器，恆resolve，失敗時發出error事件。停止時不再接受新連線，閒置之連線立即關閉，仍有請求進行中之連線最多等待5秒(hapi之預設)後中斷；stop只等連線，不等也不中止應用端之處理(operOrm、kpFunExt等)與上傳之合併worker：連線已中斷者(例如前端已停止而中止其請求)stop即完成，其處理仍續行並照常寫入副作用，Node行程待其完成才結束；前端未中止之請求(例如使用端之$fapi呼叫)於連線被中斷時失敗並依其重試設定重試，故宜先停止前端再停止伺服器。停止為終態：其後ready仍回傳原結果，再呼叫stop回傳同一promise而不再停止，請勿以getServer所得實體重新start(下游已釋放，只剩半個服務)。停止時w-serv-broadcast對已進入之前端補發之clientLeave與clientChange於其後約1ms才送達，可能晚於stop之promise；前端停止而伺服器繼續服務時，w-serv-broadcast約10秒(其在線逾時)後才判定該前端離線並發出clientLeave。同一行程內多個實例須給不同之fpTableTags與pathUploadTemp。本套件不註冊process之unhandledRejection、uncaughtException與uncaughtExceptionMonitor監聽，全域錯誤政策由使用端自行決定；getServer函數，回傳promise，resolve為hapi伺服器實體(不保證已啟動，確認啟動請用ready)，其stop、start請勿自行呼叫(並發時本物件之stop會於hapi停止前即resolve)，停止請一律用本物件之stop；getInstWConverServer函數，回傳promise，resolve為經w-serv-webdata擴充後之通訊實體，可於其上註冊upload監聽以受理切片上傳；其上另有w-converhp所掛之stop，呼叫會直接停止本伺服器而不釋放下游資源，停止請一律用本物件之stop</p>
+    <p>回傳事件物件，可監聽error事件，涵蓋啟動失敗與執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)，內容依來源層而異(hapi之Error、w-converhp之訊息字串、w-serv-broadcast與w-sync-webdata之{msg,err})；建構期間發生者於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時改以console.error輸出(前綴[w-serv-hapi])，輸出之值經wsemi之maskDiagErr遮罩憑證樣式(見opt.funLog)；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)，亦不影響ready與stop之結果。設定錯誤(例如useDbOrm=true而未給authorizeExec、useInert有給但非布林值)於建構時同步拋出(w-serv-webdata之設定錯誤拋出時，pathUploadTemp資料夾可能已由w-converhp建立)。另提供：ready函數，回傳promise，伺服器啟動成功時resolve為hapi伺服器實體，啟動失敗(例如埠被占用、apis路由衝突)時以原錯誤reject；stop函數，回傳promise，等待啟動結束後依序釋放下游於同一事件物件上所建立之資源(w-serv-broadcast之輪詢計時器與在線偵測；資料同步：移除掛於kpOrm之change監聽、取消待推播之時間戳並將尚未落檔者寫入檔案，落檔失敗時發出error事件)再停止伺服器，恆resolve，失敗時發出error事件。停止時不再接受新連線，閒置之連線立即關閉，仍有請求進行中之連線最多等待5秒(hapi之預設)後中斷；stop只等連線，不等也不中止應用端之處理(operOrm、kpFunExt等)與上傳之合併worker：連線已中斷者(例如前端已停止而中止其請求)stop即完成，其處理仍續行並照常寫入副作用，Node行程待其完成才結束；前端未中止之請求(例如使用端之$fapi呼叫)於連線被中斷時失敗並依其重試設定重試，故宜先停止前端再停止伺服器。停止為終態：其後ready仍回傳原結果，再呼叫stop回傳同一promise而不再停止，請勿以getServer所得實體重新start(下游已釋放，只剩半個服務)。停止時w-serv-broadcast對已進入之前端補發之clientLeave與clientChange於其後約1ms才送達，可能晚於stop之promise；前端停止而伺服器繼續服務時，w-serv-broadcast約10秒(其在線逾時)後才判定該前端離線並發出clientLeave。同一行程內多個實例須給不同之fpTableTags與pathUploadTemp。本套件不註冊process之unhandledRejection、uncaughtException與uncaughtExceptionMonitor監聽，全域錯誤政策由使用端自行決定；getServer函數，回傳promise，resolve為hapi伺服器實體(不保證已啟動，確認啟動請用ready)，其stop、start請勿自行呼叫(並發時本物件之stop會於hapi停止前即resolve)，停止請一律用本物件之stop；getInstWConverServer函數，回傳promise，resolve為經w-serv-webdata擴充後之通訊實體，可於其上註冊upload監聽以受理切片上傳；其上另有w-converhp所掛之stop，呼叫會直接停止本伺服器而不釋放下游資源，停止請一律用本物件之stop</p>
 </div>
 
 
@@ -1392,7 +1432,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Oct 28 2026 08:50:45 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Oct 30 2026 03:33:25 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
