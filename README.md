@@ -24,6 +24,22 @@ To view documentation or get support, visit [docs](https://yuda-lyu.github.io/w-
 * `apis` routes do not pass through `verifyConn`, and `kpFunExt` functions do not pass through `authorizeExec`: guard each of them yourself, including role or membership checks at the function level.
 * `sysFuncsPublic`: decides which system functions (`[sys:getFuncList]`, `[sys:getTableTags]`, `[sys:polling]`) may be called without an identity (see Upgrade Notes).
 
+## Diagnostic output
+`w-serv-hapi` implements no masking or diagnostic output of its own: it forwards `logDetail`, `funLog` and `onTrace` to `w-serv-webdata` as is (the server forwards the whole option object; the frontend does too, and checks the types of `logDetail` and `funLog` up front so that `useWaitToken: true` throws the same errors as `false`). What is printed by default (a fixed label and a summary without data values, user ids, tokens or error text), what `logDetail: true` restores, which credentials are masked as `***`, and the limits are defined by `w-serv-webdata` (see its README, *Diagnostic output*), which uses the shared diagnostic module of `wsemi` (`getDiag`, `maskDiagErr`, ...; rule R-DIAG-01 in the `wsemi` repository, cross-package spec *Diagnostic output and masking*).
+
+The console output of `w-serv-hapi` itself is **not** covered by `logDetail` / `funLog`:
+* When nobody listens to the `error` event of the returned object, `w-serv-hapi` prints the event value with `console.error('[w-serv-hapi]', value)` after passing it through `maskDiagErr` of `wsemi`: URL credentials (`scheme://user:password@host`), `password=...`, `token=...`, `Authorization: ...` and `Bearer ...` become `***`. An Error is printed as a masked copy of the same class, and a value without such text is printed as is. `w-serv-hapi` holds no secret value (the token returned by `getToken` is remembered by `w-serv-webdata`), so a bare password or token string without such a form is not recognized and error texts may still show up. Attach an `error` listener (it must not throw) to receive the value yourself.
+* The value handed to your `error` listener is not changed by `w-serv-hapi` (it is the value of the layer below), except the value thrown or rejected by your `getToken` while the frontend waits for a token (`useWaitToken: true`): it is masked the same way before it is emitted, as `w-serv-webdata` masks the errors of `getToken` once the data synchronization is built.
+* The other console lines (`Server running at: ...`, the number of clients, `waiting token...`, `get token`) are fixed text and numbers, controlled by `useShowLog`.
+
+## Breaking changes
+Requires `w-serv-webdata ^1.1.20`, `w-converhp ^2.1.12` and `wsemi ^1.9.31`. Diagnostic output and masking now come from the shared module of `wsemi`; no compatibility with the earlier masking is kept. What you may notice:
+* **The mask text of the diagnostic output is `***` instead of `[token]`** (`funLog` detail and `logDetail` output of `w-serv-webdata`). Code that matches the literal `[token]` in logs must be changed. Credentials other than tokens (URL credentials, `password=...`, `Authorization`, `Bearer`) are masked as well, and a token shorter than 4 characters is not masked.
+* **Error values of the data channel are masked** (`w-serv-webdata`): the `error` events of the server, the rejected values of frontend requests and the `{ state: 'error', msg }` returned to the frontend (for example the rejection of `authorizeExec`, `getUserIdByToken`, a `kpFunExt` function or your ORM) are replaced by a masked copy when they contain credentials or a recently seen token; a value without them is passed as is (same object). Fixed messages such as `permission denied` are never changed.
+* **The console output of `w-serv-hapi` when no `error` listener is attached is masked** (see *Diagnostic output*). It printed the raw value before.
+* **Frontend with `useWaitToken: true`**: the `error` event for a `getToken` that throws or rejects carries a masked copy (same class, the original is unchanged) when the value contains credentials; a value without credentials is the same object as before.
+* New option `onTrace` (server and frontend) is forwarded to `w-serv-webdata` and from there to `w-serv-broadcast`. It is not forwarded to `w-converhp`, whose frontend has an option of the same name for retry and polling events.
+
 ## Upgrade Notes
 
 ### w-serv-webdata ^1.1.16: system functions, `sysFuncsPublic` (compatible default)
@@ -467,7 +483,7 @@ client()
 
 Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.1.10/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.1.11/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:

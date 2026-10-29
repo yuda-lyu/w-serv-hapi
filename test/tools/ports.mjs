@@ -44,6 +44,8 @@ let alloc = [
     ['api-client-stop', 5, '供子行程之前端停止情境: 取得函數清單後、首次輪詢成功時、同步表select在途時各一; 第3個供$fapi在途; 第4個供先停伺服器之情境'],
     ['api-sys-funcs', 8, '各設定各起一台: 第0至6個依序為未給sysFuncsPublic、只公開[sys:getFuncList]、公開[sys:getFuncList]與[sys:getTableTags]、空陣列、只公開[sys:polling]、getUserIdByToken對空token拒絕之未給、不開資料通道; 第7個供建構即同步拋錯(不綁定)與null之情境依序共用'],
     ['api-diaglog', 2, '第0個供建構即同步拋錯(不綁定)與有效值之情境依序共用; 第1個供前端診斷輸出各情境依序共用'],
+    ['api-diaglog-mask', 2, '第0個供伺服端各情境依序共用(起伺服器); 第1個供路由衝突而啟動失敗之情境(不綁定)'],
+    ['api-ontrace', 1, '伺服端onTrace情境起伺服器; 前端情境指向reserved.closed(不連線成功)'],
 ]
 
 //segs, 依 alloc 之順序自 base 起連續配發

@@ -20,6 +20,9 @@
 - **下游新增前端選項時,轉紅的不只 `unit-optDoc`**(2026-10-28,w-serv-webdata 1.1.18 之 `logDetail`、`funLog`):`unit-client-init` 之行為比對自下游前端 JSDoc 取選項名,對 `useWaitToken=true` 要求本套件同步拋出下游於建構時拋之同一訊息,新選項若有「有給而無效即拋錯」之檢核,必須同批在本套件前端先行檢核(R1 表、R14).升版後先跑全套看全部紅燈,不要只看提示詞列出的那條.
 - **證明「選項到達下游」要有下游實際產生輸出的觸發點**:`logDetail`、`funLog` 在伺服端經本套件建構時無診斷輸出站(僅 `instWConverServer` 非物件時有,本套件恆傳物件),只能以無效值之同步拋錯證明到達;前端以 `recvData` 於自身停止後才拋錯觸發下游輸出(`[w-serv-webdata] callback error after stop`),三組設定 × 兩種 `useWaitToken` 才能抓到「固定轉傳某值」「前端漏轉」之變異.擷取 console 時只在 `session` 內暫換 `console.error`,`finally` 還原.
 - **升下游後盤點本套件自身之 console 輸出站,別假設下游的出口涵蓋它**:`rg -n "console\.(log|error)\(" src/*.mjs` 全集 6 處,2 處(無 error 監聽者時 `console.error('[w-serv-hapi]', err)`)原樣輸出事件值,不經下游之 `logDetail`、`funLog`(L15).
+- **遷移到 wsemi 共用遮罩模組(2026-10-30,wsemi 1.9.31 + webdata 1.1.20)時,轉傳端先分清「持有什麼」再決定包什麼**(R15):本套件無診斷細節出口、無靜態秘密,故只在 console 出口與外來值(`getToken` 之拋出／reject)的 catch 站點呼叫 `maskDiagErr(err)`(不給秘密清單,通用樣式即作用),不建 `getDiag` 實例、不宣告 secrets／safeKeys.交給使用端監聽器之下游值不改(下游自負其遮罩).升版後 `[token]` 字樣變 `***`,測試中比對字樣之斷言要同步(`api-diaglog`);`unit-optDoc` 因 `onTrace` 轉紅屬預期(補兩端 `@param opt.onTrace`).
+- **不把「近期取得之 token」當前端遮罩秘密**:本套件前端 `getToken` 拋錯時恆無已取得之 token,唯一會作用的 `startSync` 之 catch 只見 w-serv-webdata 建構時之固定詞彙錯誤(`AbortController is not available`),以秘密比對會把固定詞彙挖空而讓人反推短 token(dspec D3).曾寫 `tokenSeen`,測前分析即棄用.
+- **onTrace 與 w-converhp 同名但事件不同**:`WConverhpClient` 亦有 `opt.onTrace`(重試退避、合併輪詢),本套件對 w-converhp 逐項列舉選項、對 w-serv-webdata 整包轉傳,故 `onTrace` 只到 w-serv-webdata→w-serv-broadcast(「事件不增不減」之下游契約);`test/api-ontrace.test.mjs` 以 `retryMain:1`＋指向無人監聽 port,等到 `result` 事件後斷言無 `retry-wait` 等 w-converhp 事件(負向案).
 
 ## 事件與生命週期
 
@@ -57,6 +60,11 @@
 - **各案須能獨立執行**(`--grep` 單跑):避免案例 B 靠案例 A 留下之資料或 error 事件;比對 error 事件用「案例開始前之長度」切片,同步表資料就緒用「非空」而非前案留下之具體值.
 - **變異驗證之錨點須容 CRLF**:正則寫 `\r?\n`;副本除 `src` 與 `test` 外,`unit-optDoc` 以 cwd 相對路徑讀 `./node_modules/w-serv-webdata/src`,故副本內需有該目錄(其餘相依靠 Node 向上解析,不需目錄連接點);`spawnSync` 不用 shell、設 `timeout`,結束後核對 repo 之 src 無變異殘留(變異只動副本).
 - **跨來源之驗證以「預檢(通訊路由)+ 實際請求(apis 路由)」各取 ACAO**:實際請求打 `/api/main` 會因封包格式不符而觸發 w-converhp 之 error 事件,改打 apis 之路由即無雜訊,且與通訊路由共用伺服器層之 cors 設定(`test/api-exposure.test.mjs`).
+
+- **共用語料(`wsemi/src/_diagCases.mjs`)之接線用「判定表」列全**(2026-10-30):`wire:true` 20 案各給「run 或不適用理由」,測試斷言表之鍵等於語料之 wire 全集(語料新增而未判定者轉紅);只重跑 `make(ctx)`→本套件真實出口→`verify` 形狀相容者(T07 字串樣式、R01 身分不變),其餘因需已登錄之秘密、含 detail 側、或屬 getDiag／拷貝出口而不適用,不為湊數改寫語料案.
+- **觸發前端 `startSync` 之 catch**:w-serv-webdata 前端建構內 `new AbortController()`(`WServWebdataClient.mjs:284`);建構子回傳後、首次檢查之計時器(0ms)前,同步把 `globalThis.AbortController` 換成會拋錯之類別,`finally` 還原,即可讓該站點發出 error.無此手段該站點(固定詞彙錯誤)無從觸發.
+- **`run_in_background` 之 Bash 須明給 `timeout`**:鎖佇列等待可達數十分鐘;原以前景 `timeout:600000` 排鎖,被移背景後 10 分鐘即被終止(全套測試任務因此被殺,2026-10-30),須 `run_in_background:true` 並給 `timeout:7200000`;排鎖與長作業合併成一支腳本一次取鎖(階段 A 全綠才進修前紅與變異,日誌落 `./tmp`),每支腳本內 `spawnSync` 設 `timeout` 與 `--exit`.
+- **工作樹 CRLF**:變異腳本之多行錨點轉為檔案實際換行(`includes('\r\n')`),且每個錨點須恰出現 1 次,否則標 INCONCLUSIVE 不執行.
 
 ## 選項值域
 

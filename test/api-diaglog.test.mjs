@@ -11,8 +11,8 @@ let { portOf } = wPorts
  * 驗證診斷輸出選項(logDetail、funLog)確實到達w-serv-webdata(伺服器端與前端)
  *
  * 規格來源: WServHapiServer與WServHapiClient之JSDoc
- * - opt.logDetail「輸入w-serv-webdata之診斷輸出是否還原為完整細節…原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要；token無論如何皆遮罩為'[token]'。有給(非undefined、null)但非布林值時建構即同步拋錯」
- * - opt.funLog「輸入w-serv-webdata之診斷輸出函數(label, safe, detail)…給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(含資料值與錯誤原文，token已遮罩…)…有給(非undefined、null)但非函數時建構即同步拋錯」
+ * - opt.logDetail「輸入w-serv-webdata之診斷輸出是否還原為完整細節…原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要；憑證與token(網址帳密、password、token、Authorization、Bearer等鍵值…)無論如何皆遮罩為'***'。有給(非undefined、null)但非布林值時建構即同步拋錯」
+ * - opt.funLog「輸入w-serv-webdata之診斷輸出函數(label, safe, detail)…給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(含資料值與錯誤原文，憑證與token已遮罩為'***'；無細節者不傳)…有給(非undefined、null)但非函數時建構即同步拋錯」
  *
  * 本套件不訂預設與檢核(伺服端: 規則帳本R1), 本測試測的是「選項確實到達下游, 行為與所給之設定一致」, 下游自身之邊界(遮罩範圍、拷貝規則等)由w-serv-webdata單一擁有並測試
  * 前端以「回調函數(recvData)於前端停止後才拋錯」觸發下游之診斷輸出(下游前端唯一之console.error站); 伺服端於經本套件建構時無診斷輸出站, 故以無效值之同步拋錯證明選項已到達下游
@@ -163,22 +163,22 @@ describe('api-diaglog', function() {
 
         it(`前端給logDetail=true時, 診斷輸出還原為含錯誤原文之完整細節, token遮罩(useWaitToken=${useWaitToken})`, async function() {
             let r = await session({ name: `diaglog-det-${nm++}`, useWaitToken, optClient: { logDetail: true } })
-            //JSDoc: logDetail還原為完整細節; token無論如何皆遮罩為'[token]'
+            //JSDoc: logDetail還原為完整細節; 憑證與token無論如何皆遮罩為'***'
             assert.strict.deepEqual(r.errors.length, 1)
             assert.strict.deepEqual(r.errors[0][0], LABEL)
             let s = inspect(r.errors[0].slice(1), { depth: 10 })
-            assert.strict.deepEqual([s.includes('raw-error-text-6'), s.includes('u-secret-uid-3'), s.includes(TOKEN), s.includes('[token]')], [true, true, false, true])
+            assert.strict.deepEqual([s.includes('raw-error-text-6'), s.includes('u-secret-uid-3'), s.includes(TOKEN), s.includes('token=***')], [true, true, false, true])
         })
 
         it(`前端給funLog時, 診斷輸出只交給funLog(label, safe, detail)而不寫console, detail含錯誤原文且token遮罩(useWaitToken=${useWaitToken})`, async function() {
             let r = await session({ name: `diaglog-fun-${nm++}`, useWaitToken, optClient: { funLog: () => {} } })
-            //JSDoc: 給予時其診斷輸出只交給它而不寫console; label為固定標籤, safe為不含資料值之摘要, detail為完整細節(token已遮罩)
+            //JSDoc: 給予時其診斷輸出只交給它而不寫console; label為固定標籤, safe為不含資料值之摘要, detail為完整細節(憑證與token已遮罩為'***')
             assert.strict.deepEqual(r.errors, [])
             assert.strict.deepEqual(r.funCalls.length, 1)
             let [label, safe, detail] = r.funCalls[0]
             assert.strict.deepEqual([label, safe], [LABEL, { hook: 'recvData', errType: 'Error' }])
             let s = inspect(detail, { depth: 10 })
-            assert.strict.deepEqual([s.includes('raw-error-text-6'), s.includes('u-secret-uid-3'), s.includes(TOKEN), s.includes('[token]')], [true, true, false, true])
+            assert.strict.deepEqual([s.includes('raw-error-text-6'), s.includes('u-secret-uid-3'), s.includes(TOKEN), s.includes('token=***')], [true, true, false, true])
         })
 
     }
