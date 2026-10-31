@@ -4,8 +4,8 @@
 
 ## 版本與相依
 
-- 套件版本(package.json):1.1.11(本輪修改未發布,發布與升版由使用者/主控處理).
-- 相依:w-converhp ^2.1.12(安裝 2.1.12)、**w-serv-webdata ^1.1.20**(安裝 1.1.20)、**wsemi ^1.9.33**(安裝 1.9.33,2026-10-31 由 ^1.9.31 升;本套件新增直接使用 `wsemi/src/getDiag.mjs`,移除 `maskDiagErr` 之直接引用);傳遞依賴 w-serv-broadcast 1.1.14、w-sync-webdata 1.1.10;devDependencies:w-orm-lowdb ^1.0.40、w-package-tools ^1.1.21.
+- 套件版本(package.json):1.1.13(連動版;本輪修改未發布,發布與升版由使用者/主控處理).
+- 相依:w-converhp ^2.1.13(安裝 2.1.13)、w-serv-webdata ^1.1.21(安裝 1.1.21)、**wsemi ^1.9.36**(安裝 1.9.36;本套件直接使用 `wsemi/src/getDiag.mjs`、`evEmit.mjs`);devDependencies:w-orm-lowdb ^1.0.41、w-package-tools ^1.1.21.
 - dist 由發布流程重建(內嵌下層),本輪未重建.
 
 ## 功能現況
@@ -14,6 +14,7 @@
 |---|---|---|---|
 | 轉傳選項不另訂預設與檢核(含 `sysFuncsPublic`、`onTrace`) | R1、R13 | unit-optDoc、api-options、api-sys-funcs、unit-client-init、api-ontrace | 完成;JSDoc 已列 `sysFuncsPublic`、`onTrace`(2026-10-30);`onTrace` 只到 w-serv-webdata→w-serv-broadcast,不轉交 w-converhp(其前端同名選項為重試與合併輪詢事件) |
 | 設定錯誤同步拋出、環境錯誤走 error 事件 | R2、R3 | api-options、api-error-listener | 完成;含 `sysFuncsPublic` 無效值同步拋錯 |
+| **使用端 error 監聽器同步拋錯之通報受 `logDetail`／`funLog` 控制** | R11、R16 規則 5 | api-error-listener | 完成(2026-11-01,hapi234):兩端 `evEmit(…, optEmit)`,`optEmit = { tag, logDetail, funLog }`;預設 stderr 只含 `'[wsemi w-serv-hapi] listener threw'` 與 `{ errType }`(不含拋出值),`logDetail:true` 含遮罩後細節,`funLog` 只交給它;行程不崩潰、ready／stop 結果不受影響(既有語意不變).JSDoc 兩端、README〈Diagnostic output〉已載.原因:wsemi 1.9.34 起 `evEmit` 預設只輸出安全摘要(原三案斷言含原文而轉紅),且原呼叫只傳 `tag`,通報不受本套件之選項控制 |
 | stop 與資源釋放 | R4、R12 | api-options、api-client-stop | 完成 |
 | port 檢核與測試 port 配發 | R5、R7 | api-options、unit-ports | 完成;api-sys-funcs 配發 8 個、api-diaglog 2 個、api-diaglog-mask 2 個、api-ontrace 1 個 |
 | process 全域監聽不註冊 | R6 | api-options | 完成 |
@@ -26,6 +27,7 @@
 
 ## 最近一次驗證
 
+- 2026-11-01(hapi234,wsemi 1.9.36 + w-serv-webdata 1.1.21 + w-converhp 2.1.13):全套 `npm test`(`quiet-run`,於同一次取鎖內)**197 綠 0 紅**(約 1.4 分鐘;原 191 + `api-error-listener` 由 3 案改寫為 9 案〔淨增 6〕).修前:HEAD 原 `api-error-listener` 對 HEAD src **3 紅**(監聽器拋錯三案斷言 stderr 含原文,實得不含);新測試對 HEAD src 6 紅(logDetail 3、funLog 3);修後全綠.變異 10/10 被抓到、預期紅集合逐項相符(帳本〈變異驗證紀錄〉2026-11-01);repo 之 src 未被變異.eslint(改動檔)0 error.
 - 2026-10-31(排程第 158 項,wsemi 1.9.33 + w-serv-webdata 1.1.20 + w-converhp 2.1.12):全套 `npm test`(`quiet-run --lock`,凍結碼)**191 綠 0 紅**(約 1.5 分鐘;原 168 + `api-diaglog-console` 16 + `api-diaglog-mask` 新增 funLog 與 K09、P01 路徑 + `api-error-listener` 新增 logDetail 2 案).修前紅(src 為 HEAD、新測試):`api-diaglog-console` 16 案中 **14 紅 2 綠**(2 綠為「有 error 監聽者」之守住案);變異 16/16 被抓到、src 逐位元組還原(帳本〈變異驗證紀錄〉2026-10-31).eslint(改動檔)0 error.
 
 - 2026-10-30(排程第 161 項遷移,wsemi 1.9.31 + w-serv-webdata 1.1.20 + w-converhp 2.1.12):最終碼階段 A(`api-diaglog-mask`＋`api-ontrace`＋`unit-optDoc`＋`api-diaglog`＋`unit-ports`)**40 綠 0 紅**;修前紅(src 退回 HEAD)13 紅(`api-diaglog-mask` 11、`unit-optDoc` 2)、HEAD 版 `api-diaglog` 於新依賴下 4 紅;變異 12/12 被抓到.全套結果見下行.eslint(改動檔)0 error.變異與修前紅紀錄:帳本〈變異驗證紀錄〉2026-10-30.

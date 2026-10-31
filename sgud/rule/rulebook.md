@@ -152,13 +152,13 @@
 
 ## R11 本套件自發之 error 一律經 wsemi 之 evEmit 派發
 
-**規則**:伺服端之 emitError(含建構期暫存者之轉出;伺服端之 error 一律經此,含轉送之下層 error)與前端之 emitError,於派發當下外層事件物件無 error 監聽者時改經 wsemi 之 `getDiag` 出口輸出(預設只輸出固定標籤與安全摘要,`logDetail`／`funLog` 取細節,見 R16;2026-10-31 前為 `console.error('[w-serv-hapi]', maskDiagErr(err))`),否則以 `evEmit(ev, 'error', [err], { tag: 'w-serv-hapi' })` 派發;使用端 error 監聽器之同步拋錯由 evEmit 攔截並以 console.error 輸出,不影響 ready 與 stop 之結果.
+**規則**:伺服端之 emitError(含建構期暫存者之轉出;伺服端之 error 一律經此,含轉送之下層 error)與前端之 emitError,於派發當下外層事件物件無 error 監聽者時改經 wsemi 之 `getDiag` 出口輸出(預設只輸出固定標籤與安全摘要,`logDetail`／`funLog` 取細節,見 R16;2026-10-31 前為 `console.error('[w-serv-hapi]', maskDiagErr(err))`),否則以 `evEmit(ev, 'error', [err], optEmit)` 派發(`optEmit = { tag: 'w-serv-hapi', logDetail: get(opt, 'logDetail'), funLog: get(opt, 'funLog') }`,與 `diag` 同源〔使用端 opt〕,2026-11-01 起帶 `logDetail`／`funLog`,見 R16 規則 5);使用端 error 監聽器之同步拋錯由 evEmit 攔截並經 wsemi 之 `getDiag` 輸出通報(預設 `console.error('[wsemi w-serv-hapi] listener threw', { errType })`,不含拋出值;`logDetail:true` 輸出遮罩後細節;`funLog` 只交給它),不影響 ready 與 stop 之結果.
 
 **why**:①伺服端之派發點位於計時器(pmFlush)、啟動失敗之 catch、stop 之內,直接 `ev.emit` 時監聽器之拋錯在計時器即成 uncaughtException、在 catch 即成未處理之 rejection(2026-10-13 子行程實測:修正前兩情境皆以 exit 1 結束),在 stop 內則使其 promise reject 而違反「恆 resolve」.②無監聽者時(2026-10-14 審計 F14,裁示 H-a):本套件常駐之轉送監聽(`instWConverServer.on('error', emitError)`)使下層判定「有人在聽」——wsemi `evEmit` 對下層監聽器之拋錯改 emit error 而不印、w-serv-broadcast 與 w-sync-webdata 之 error 不再走其「無監聽者即 console.error」——再於外層 eventemitter3 無人聽時丟棄,下層本會印出之錯誤經本套件後靜默.改為無監聽者即 console.error,與 w-serv-broadcast、w-sync-webdata 之「失敗不可無聲」一致.原「與下游各層之派發政策一致」只對派發安全(evEmit)成立,對無監聽者之處置不成立(w-converhp、w-serv-webdata 為靜默),已更正.
 
 **盤點**:`rg -n "\.emit\('error'" src`(應無結果);`rg -n "evEmit\(|listenerCount\('error'\)" src`(伺服端、前端各 1 處 evEmit 與 1 處 listenerCount).
 
-**測試**:`test/api-error-listener.test.mjs`(監聽器拋錯不崩潰三案;未掛 error 監聽時,伺服端之下層監聽器拋錯、伺服端自發之啟動失敗、前端自發之 getToken 拋錯皆以 `[w-serv-hapi]` 前綴出現於 stderr 之子行程案).
+**測試**:`test/api-error-listener.test.mjs`(監聽器拋錯不崩潰:建構期 error、啟動失敗、前端 getToken 三端 × 預設／`logDetail:true`／`funLog` 三面向共 9 案〔2026-11-01 前為預設三案,斷言 stderr 含監聽器拋出之原文,wsemi 1.9.34 起 evEmit 預設只輸出安全摘要而轉紅〕;未掛 error 監聽時,伺服端之下層監聽器拋錯、伺服端自發之啟動失敗、前端自發之 getToken 拋錯皆以 `[w-serv-hapi]` 前綴出現於 stderr 之子行程案).
 
 ## R12 停止之範圍與順序(2026-10-14)
 
@@ -322,17 +322,18 @@
 2. `from` 為固定詞彙(`safeKeys` 白名單,值皆程式內字面值):伺服端 `downstream`(`instWConverServer.on('error')` 轉送之下層 error)、`clear`(clearDownstream 之 catch)、`start`(啟動失敗)、`stop`(stop 內 server.stop 之 catch);前端 `getToken`、`startSync`.建構期暫存之 error 保留其來源別(暫存項為 `{ err, from }`).`errType`、`errCode` 由 `diag.brief` 產生:`errCode` 只取 wsemi 白名單(SYS、NODE 代碼集合)內者,`nested: ['err']` 使 w-serv-broadcast、w-sync-webdata 之 `{ msg, err }` 取其 `err` 之代碼;字串與其他非物件值只有類別(`string` 等).
 3. 本套件仍**不另寫遮罩、不持有靜態秘密、不給秘密清單**(R15 規則 2 不變):遮罩只套 wsemi 之通用憑證樣式;不認識之裸字串密碼與 token、不含憑證樣式之錯誤原文與使用端自填之值**不在 `logDetail` 輸出之遮罩保證內**(故預設不輸出).
 4. `useShowLog` 之 4 處 `console.log`(伺服端 `now clients: N`、`Server running at: <uri>`;前端 `waiting token...`、`get token`)**刻意不套**:內容為固定詞彙加 port、hapi 之 `server.info.uri`、客戶端人數,無外來值,屬 `useShowLog`(預設 true)既有開關之資訊行而非 error 診斷,仍由 `useShowLog` 控制,`funLog` 不涵蓋(JSDoc、README 已載).
+5. **使用端 error 監聽器同步拋錯之通報(2026-11-01,hapi234)亦屬本套件之診斷輸出,同受 `logDetail`／`funLog` 控制**:兩端 `evEmit(…, 'error', [err], optEmit)` 之 `optEmit = { tag: 'w-serv-hapi', logDetail: get(opt, 'logDetail'), funLog: get(opt, 'funLog') }`(建構時取快照,與 `diag` 同源),由 wsemi 之 `evEmit` 經 `getDiag(optEmit)` 輸出:**預設** `console.error('[wsemi w-serv-hapi] listener threw', { errType })`(不含拋出值);`logDetail===true` → `console.error(label, { event, err })`(`err` 為監聽器之拋出值,經 getDiag 遮罩憑證樣式);`funLog` 為函數 → 只交 `funLog(label, safe, detail)`,不寫 console.label 由 wsemi 以 `tag` 組成(`[wsemi <tag>] listener threw`),故 `tag` 不可省.**why**:HEAD(1.1.13)只傳 `{ tag }`,`evEmit` 不知使用端之選項,通報恆走 console、不受 `logDetail`／`funLog` 控制——與 JSDoc「本套件自身之診斷輸出依此二選項」不一致(給 `funLog` 者仍在 stderr 見到通報);且 wsemi 1.9.34(f7cd1d4d3)起 `evEmit` 預設只輸出安全摘要,原斷言「stderr 含監聽器拋出之原文」三案因而轉紅(行程不崩潰、離開碼 0 仍成立).**盤點**:`rg -n "evEmit\(" src/*.mjs`(兩端各 1 處,第 4 參數必為 `optEmit`,不得為字面物件);`rg -n "optEmit =" src/*.mjs`(兩端各 1 處,三鍵齊全).
 
 **why**:2026-10-31 排程第 158 項:R15 之 console 出口雖經 `maskDiagErr`,但 `maskDiagErr` 只遮憑證,不遮使用者識別與使用端自填之值;error 事件內容可含 `getUserIdByToken` 之拒絕值(實測:真實路徑經 w-serv-webdata 以 error 事件送出,本套件轉送後無監聽者時整個 Error 含 stack 與使用者識別被印出,見 `api-diaglog-console` 修前紅)、`getToken` 之拋出值.比照 wsemi `getDiag` 之一致介面:預設只輸出安全摘要(D2),細節由使用端以 `logDetail`／`funLog` 明示取得.
 
 **盤點**:`rg -n "console\.(log|error|warn|info|debug)\(" src/*.mjs`(去掉 JSDoc 示例後全集 6 處,本表逐站列出,無空白格);`rg -n "emitError\(|diag\(|getDiag\(" src/*.mjs`(`diag(` 伺服端、前端各 1 處,不得另有繞過它直接 `console.error` 之站點).
 
-**站點全表**(行號依 2026-10-31 之 src):
+**站點全表**(行號依 2026-10-31 之 src;2026-11-01 起 src 於 emitError 前增 `optEmit` 數行〔伺服端 :336–:339、前端 :325–:327〕,表內其後之行號伺服端約 +4、前端約 +3,以盤點指令為準):
 
 | 檔:行 | 站點 | 值之來源 | 處置 | 守住之測試 |
 |---|---|---|---|---|
 | `WServHapiServer.mjs:344` | `diag(...)` 出口(emitError,無監聽者;唯一之 error 診斷出口) | 下層轉送、clearDownstream、啟動失敗、server.stop、建構期暫存之轉出 | **改**:預設只輸出標籤與 `{from,errType,errCode?}`;logDetail 輸出遮罩細節;funLog 取代 console | api-diaglog-console 伺服端 10 案(預設 7 案:Error、{msg,err}、字串、getUserIdByToken 真實路徑、clear 與 stop、start〔EADDRINUSE〕、建構期暫存;logDetail、funLog、有監聽者各 1 案);api-diaglog-mask(logDetail 細節之遮罩);api-error-listener(子行程 stderr:預設與 logDetail 兩種) |
-| `WServHapiServer.mjs:347` | `evEmit(ev, 'error', …)` 交監聽器 | 同上 | 不改(轉送端不改下游之值;有監聽者不經 diag) | api-diaglog-console:有監聽者案;api-diaglog-mask:交給監聽器之值 |
+| `WServHapiServer.mjs:351`(原 :347) | `evEmit(ev, 'error', [err], optEmit)` 交監聽器 | 同上;監聽器同步拋錯時之通報(wsemi 輸出) | 交監聽器之值不改(轉送端不改下游之值;有監聽者不經 diag);**通報改**(2026-11-01,規則 5):帶 `optEmit`〔`tag`、`logDetail`、`funLog`〕 | api-diaglog-console:有監聽者案;api-diaglog-mask:交給監聽器之值;api-error-listener:伺服端 6 案(建構期、啟動失敗 × 預設／logDetail／funLog) |
 | `WServHapiServer.mjs:389-390` | 轉送監聽 `instWConverServer.on('error', …emitError(err, 'downstream'))` | w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata 之 error | **改**:帶來源別 `downstream` | api-diaglog-console(from 斷言) |
 | `WServHapiServer.mjs:411` | clearDownstream 之 catch → `emitError(err, 'clear')` | 下游清理之拋錯 | 改(來源別) | api-diaglog-console:clear 與 stop 案 |
 | `WServHapiServer.mjs:439` | 建構期暫存之轉出 `emitError(v.err, v.from)` | 建構期下層 error | 改(保留來源別) | api-diaglog-console:建構期暫存案;api-error-listener(R3) |
@@ -341,7 +342,7 @@
 | `WServHapiServer.mjs:396` | console.log `Server[port:N]: now clients: M` | w-serv-broadcast 之人數、port | **刻意不套**(R16 規則 4) | — |
 | `WServHapiServer.mjs:484` | console.log `Server running at: <uri>` | hapi `server.info.uri`(協定、主機、port;無帳密) | **刻意不套** | — |
 | `WServHapiClient.mjs:327` | `diag(...)` 出口(emitError,無監聽者) | `getToken` 之拋出值(已先 `diag.err`)、startSync 之例外 | **改**(同伺服端) | api-diaglog-console 前端 6 案(預設 3 案:同步拋出含代碼、reject 字串、startSync;logDetail、funLog、有監聽者各 1 案);api-diaglog-mask;api-error-listener(子行程) |
-| `WServHapiClient.mjs:330` | `evEmit(instWConverClient, 'error', …)` 交監聽器 | 同上 | 不改 | api-diaglog-console:有監聽者案;api-diaglog-mask |
+| `WServHapiClient.mjs:333`(原 :330) | `evEmit(instWConverClient, 'error', [err], optEmit)` 交監聽器 | 同上;監聽器同步拋錯時之通報 | 交監聽器之值不改;**通報改**(規則 5):帶 `optEmit` | api-diaglog-console:有監聽者案;api-diaglog-mask;api-error-listener:前端 3 案(預設／logDetail／funLog) |
 | `WServHapiClient.mjs:387` | checkToken 之 catch → `emitError(diag.err(err), 'getToken')` | 使用端回調之外來值 | 改:`maskDiagErr` → 等價之 `diag.err`,帶來源別 | api-diaglog-console、api-diaglog-mask(前端 getToken 3 案、語料 T07／R01) |
 | `WServHapiClient.mjs:405` | startSync 之 catch → `emitError(err, 'startSync')` | w-serv-webdata 建構時之固定詞彙錯誤 | 改(來源別);不遮罩(固定詞彙) | api-diaglog-console:startSync 案;api-diaglog-mask:startSync 案 |
 | `WServHapiClient.mjs:374`、`:399` | console.log `waiting token...`、`get token` | 固定文字 | **刻意不套**(R16 規則 4) | — |
@@ -373,7 +374,7 @@
 | `test/unit-optDoc.test.mjs` | R1 之文件涵蓋(伺服端與前端) | R1 |
 | `test/unit-client-init.test.mjs` | 前端函數型選項及 logDetail、funLog 之同步拋錯(兩種 useWaitToken)、與 w-serv-webdata 前端檢核之行為比對、未給取預設、等待中以 clearBroadcast 或 clearSync 取消、等待逾 200 次仍持續、getToken 拋錯或 reject 一則 error 並停止、首次檢查之 error 送達 new 之後之監聽、promise 未結束不重疊呼叫且停止後其結果不作用;子行程:未給 getToken 同步拋錯無 rejection、等待中停止後行程自行結束 | WServHapiClient 之 JSDoc(useWaitToken、getToken、getServerMethods、recvData、各回調、@returns);R10 |
 | `test/api-client-wait-token.test.mjs` | useWaitToken=true:取得 token 前伺服器未收到輪詢;取得後於同一物件建立資料同步、取得函數清單並收到同步表資料;等待期間取得之停止函數參照於建立資料同步後仍停止輪詢 | WServHapiClient 之 JSDoc(useWaitToken、@returns);R10 |
-| `test/api-error-listener.test.mjs` | error 監聽器同步拋錯時行程不崩潰(子行程):伺服端建構期 error 後照常 ready 與 stop、伺服端啟動失敗時 ready 照常 reject 且 stop 照常 resolve、前端等待期 getToken 拋錯;未掛 error 監聽時以 `[w-serv-hapi]` 輸出至 stderr(子行程):伺服端之下層監聽器拋錯與自發之啟動失敗、前端自發之 getToken 拋錯——預設只含標籤與安全摘要(`from: 'downstream'`／`'start'`／`'getToken'`)、不含錯誤原文;給 `logDetail:true` 時含遮罩後之原文(R16) | 兩端之 @returns;R10 規則 5、R11、R16 |
+| `test/api-error-listener.test.mjs` | error 監聽器同步拋錯時行程不崩潰(子行程):伺服端建構期 error 後照常 ready 與 stop、伺服端啟動失敗時 ready 照常 reject 且 stop 照常 resolve、前端等待期 getToken 拋錯——三端 × 三面向共 9 案:預設(stderr 含 `'[wsemi w-serv-hapi] listener threw'` 與 `errType: 'Error'`、**不含**監聽器拋出之原文)、`logDetail:true`(含遮罩後細節與原文)、`funLog`(通報只交給它、stderr 無標籤亦無原文;`test/tools/child-exit.mjs` 第 5 參數 `detail`／`funlog`、`child-client.mjs` 之 `listener-throw-detail`／`listener-throw-funlog` 模式)(R16 規則 5);未掛 error 監聽時以 `[w-serv-hapi]` 輸出至 stderr(子行程):伺服端之下層監聽器拋錯與自發之啟動失敗、前端自發之 getToken 拋錯——預設只含標籤與安全摘要(`from: 'downstream'`／`'start'`／`'getToken'`)、不含錯誤原文;給 `logDetail:true` 時含遮罩後之原文(R16) | 兩端之 @returns;R10 規則 5、R11、R16 |
 | `test/unit-ports.test.mjs` | R7 | R7 |
 | `test/api-exposure.test.mjs` | useInert、pathStaticFiles、corsOrigins 之值域:未給與 null 取預設、合法寫法、有給而無效同步拋且無殘留;corsOrigins 各值以各來源之預檢(通訊路由)與實際請求(apis 路由)之 ACAO 驗證 | JSDoc 之 useInert、pathStaticFiles、corsOrigins;R9 |
 | `test/api-verify-upload.test.mjs` | 本套件與 w-serv-webdata 皆不註冊 upload、download 監聽;未註冊時匿名切片上傳於寫入前被拒並發 error 事件;註冊後可寫入;verifyConn 非函數時建構期 error 於 ready 前送達且一律 permission denied | JSDoc 之 verifyConn(w-converhp 2.1.7 起三案皆為正式斷言,原 L4 之 pending 判定已移除) |
@@ -523,6 +524,29 @@ wsemi 1.9.33、w-serv-webdata 1.1.20、w-converhp 2.1.12.
 | M16 伺服端 clearDownstream 之來源別誤標為 `stop` | 被抓到:1 紅 |
 
 16/16 被抓到,0 倖存,0 INCONCLUSIVE;腳本先備份兩個 src,每項後 `copyFileSync` 還原,結束以 sha256 比對備份一致(兩檔皆 true).
+
+### 2026-11-01(R16 規則 5:error 監聽器拋錯之通報受 `logDetail`／`funLog` 控制;hapi234;腳本 `tmp/hapi234/{probe-stderr,mutate-full}.mjs`,一次取鎖,結束已清)
+
+wsemi 1.9.36、w-serv-webdata 1.1.21、w-converhp 2.1.13.變異在複本(`tmp/hapi234/mut`)上進行,repo 之 src 不動;複本每項後還原,結束核對兩檔與現行 src 逐字相同.
+
+修前:HEAD 之原 `api-error-listener`(3 案斷言 stderr 含 `listener-err`)對 HEAD 之 src **7 案中 3 紅**(`[exited, code, includes]` 實得 `[true, 0, false]`,與主控盤查相同形狀);新測試(9 案)對 HEAD 之 src **13 案中 6 紅**(logDetail 3、funLog 3;預設 3 案在 HEAD 即綠,因 HEAD 已帶 `tag`).HEAD 實跑 stderr:三端、三面向(預設／`logDetail:true`／`funLog`)**皆只有** `[wsemi w-serv-hapi] listener threw { errType: 'Error' }`——給了 `logDetail:true` 或 `funLog` 仍不受控,即規則 5 所指之不一致.修後 13 案全綠.
+
+變異跑 `api-error-listener` 單檔(對照 M0:無變異 13 綠,監聽器拋錯案 9 案);「預期紅」依各變異所破壞之面向事先列出,實際紅之標題集合須與之逐項相同:
+
+| 變異 | 預期紅 | 結果 |
+|---|---|---|
+| M1 伺服端 `optEmit` 只剩 `{ tag }`(=HEAD) | 伺服端 logDetail 2、funLog 2 | 被抓到:4 紅,集合相符 |
+| M2 前端 `optEmit` 只剩 `{ tag }`(=HEAD) | 前端 logDetail 1、funLog 1 | 被抓到:2 紅,集合相符 |
+| M3 伺服端漏 `funLog` | 伺服端 funLog 2 | 被抓到:2 紅,集合相符 |
+| M4 伺服端漏 `logDetail` | 伺服端 logDetail 2 | 被抓到:2 紅,集合相符 |
+| M5 伺服端 `logDetail` 恆 true(預設即輸出原文) | 伺服端預設 2 | 被抓到:2 紅,集合相符 |
+| M6 前端 `logDetail` 恆 true | 前端預設 1 | 被抓到:1 紅,集合相符 |
+| M7 伺服端漏 `tag`(標籤變 `[wsemi evem] …`) | 伺服端 6(三面向 × 兩情境) | 被抓到:6 紅,集合相符 |
+| M8 前端漏 `funLog` | 前端 funLog 1 | 被抓到:1 紅,集合相符 |
+| M9 前端漏 `logDetail` | 前端 logDetail 1 | 被抓到:1 紅,集合相符 |
+| M10 前端漏 `tag` | 前端 3 | 被抓到:3 紅,集合相符 |
+
+10/10 被抓到,0 倖存,0 INCONCLUSIVE.
 
 ## 已知限制
 

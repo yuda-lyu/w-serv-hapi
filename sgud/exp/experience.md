@@ -38,6 +38,7 @@
 - **下游各層前端之停止與在途請求**(2026-10-14 起):w-serv-broadcast 1.1.9 中止在途之輪詢,w-serv-webdata 1.1.12 中止自身在途之請求(皆經 w-converhp 2.1.8 之 per-call `opt.signal`);使用端之 $fapi 與直接 execute/upload/download 依設計不中止(upload 合併輪詢於兩端停止後無上界).2026-10-13 時(webdata 1.1.10、broadcast 1.1.7)為「只停計時器、不停進行中之流程」(原 L8).
 - **歸因下層改善要用版本矩陣實測,不看 changelog**:同一情境(先停前端後立即停伺服器,retryMain=3)以 resolve hook 換入各版副本對照,webdata 1.1.10/1.1.11/1.1.12 為 5/4/0 則、broadcast 1.1.8/1.1.9 則只影響「輪詢在途或退避中停止」;原以為 5→4 是 broadcast 之功,實為 webdata 1.1.11.
 - **本套件自發之 error 一律經 evEmit**:派發點在計時器、catch、stop 之內時,直接 `ev.emit` 遇監聽器拋錯即成 uncaughtException 或未處理之 rejection,stop 亦不再恆 resolve(R11).
+- **呼叫 wsemi 診斷類函數時,使用端的 `logDetail`／`funLog` 要一併傳入,否則該出口不受本套件選項控制**(2026-11-01,hapi234):`evEmit(ev, 'error', args, opt)` 在監聽器拋錯時經 `getDiag(opt)` 輸出通報,`opt` 只讀自己的 `tag`、`logDetail`、`funLog`(wsemi 1.9.34 起預設只輸出 `'[wsemi <tag>] listener threw'` 與 `{ errType, errCode }`)。原只傳 `{ tag }`,通報恆走 console:給 `funLog` 者仍在 stderr 看到它,與 JSDoc「本套件自身之診斷輸出依 logDetail／funLog」不一致.現以 `optEmit = { tag, logDetail: get(opt,'logDetail'), funLog: get(opt,'funLog') }`(建構時取快照,與 `diag` 同源)傳入,不要整包傳 `opt`(`evEmit` 另讀 `funSettle`、`funEmit`,使用端之同名鍵會誤入).`tag` 不可省:label 由它組成,省略即變 `'[wsemi evem] listener threw'`.
 - **getInstWConverServer 所得實體上之 stop 是 w-converhp 的,不是本套件的**:serverHapi 模式下它直接 `server.stop()`,會停掉本伺服器(埠釋放)但不呼叫 clearBroadcast/clearSync,行程因上述 interval 無法自行結束(2026-10-13 子行程實測:8 秒未結束;改呼叫本套件之 stop 則結束).JSDoc 之 @returns 已註明.
 
 ## 測試

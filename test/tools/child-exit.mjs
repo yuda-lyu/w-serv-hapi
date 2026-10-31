@@ -15,7 +15,7 @@ import WServHapiClient from '../../src/WServHapiClient.mjs'
  * - mode 'polled-stop': 前端輪詢過後, 前端呼叫clearBroadcast與clearSync, 伺服器stop; 行程結束時印出自stop完成至結束之毫秒數(EXIT-AFTER)
  * - mode 'listener-throw-ctor': 建構期間發生error(pathUploadTemp無法建立), 其error監聽器同步拋錯; 之後照常ready與stop
  * - mode 'listener-throw-start': 先以net佔用port而使啟動失敗, 其error監聽器同步拋錯; 之後照常stop
- *   以上兩者之輸出逐行印出, 行程須以離開碼0結束(未崩潰)
+ *   以上兩者之輸出逐行印出, 行程須以離開碼0結束(未崩潰); 第4個參數(argv[5])給'detail'時給logDetail:true, 給'funlog'時給funLog(其收到之通報以FUNLOG行印至stdout), 未給為預設(只輸出標籤與安全摘要)
  * - mode 'no-listener-server': 不掛error監聽: 伺服器A之通訊實體上之clientChange監聽拋錯(下層之監聽器拋錯, 經本套件轉送), 伺服器B之apis與通訊路由衝突而啟動失敗(本套件自發, 不綁定, 用第5個參數之port); 兩者須以[w-serv-hapi]前綴出現於stderr(預設只含標籤與安全摘要; 第6個參數給'detail'時給logDetail:true, 含遮罩後之錯誤原文)
  * - mode 'stop-*': 前端停止之情境(CLAUDE_rulebook.md之R12), 經本套件前端(retryMain=3)於各在途點停止前端, 見runStop
  *
@@ -32,6 +32,21 @@ let base = {
     useShowLog: false,
     pathUploadTemp: `${fd}/uploadTemp`,
     fpTableTags: `${fd}/tableTags.json`,
+}
+
+//optLogOf, listener-throw-*之診斷輸出選項: 'detail'給logDetail:true; 'funlog'給funLog, 收到之通報以一行印至stdout(label、safe、細節之event與拋出值之message); 其餘為預設({})
+let optLogOf = (arg) => {
+    if (arg === 'detail') {
+        return { logDetail: true }
+    }
+    if (arg === 'funlog') {
+        return {
+            funLog: (label, safe, detail) => {
+                console.log(`FUNLOG ${label} ${JSON.stringify(safe)} ${detail && detail.event} ${detail && detail.err && detail.err.message}`)
+            },
+        }
+    }
+    return {}
 }
 
 if (mode === 'ctor-throw') {
@@ -104,7 +119,7 @@ else if (mode === 'listener-throw-ctor') {
     //pathUploadTemp置於一般檔案之下, 使w-converhp建構時無法建立資料夾而以建構期之error通知
     let fp = `${fd}/file`
     fs.writeFileSync(fp, 'x', 'utf8')
-    let wsrv = new WServHapiServer({ ...base, pathUploadTemp: `${fp}/sub` })
+    let wsrv = new WServHapiServer({ ...base, ...optLogOf(process.argv[5]), pathUploadTemp: `${fp}/sub` })
     wsrv.on('error', () => {
         console.log('LISTENER')
         throw new Error('listener-err')
@@ -119,7 +134,7 @@ else if (mode === 'listener-throw-start') {
     await new Promise((resolve) => {
         blocker.listen(port, resolve)
     })
-    let wsrv = new WServHapiServer(base)
+    let wsrv = new WServHapiServer({ ...base, ...optLogOf(process.argv[5]) })
     wsrv.on('error', () => {
         console.log('LISTENER')
         throw new Error('listener-err')
