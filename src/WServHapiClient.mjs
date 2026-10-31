@@ -4,7 +4,7 @@ import isfun from 'wsemi/src/isfun.mjs'
 import isbol from 'wsemi/src/isbol.mjs'
 import ispm from 'wsemi/src/ispm.mjs'
 import evEmit from 'wsemi/src/evEmit.mjs'
-import maskDiagErr from 'wsemi/src/maskDiagErr.mjs'
+import getDiag from 'wsemi/src/getDiag.mjs'
 import WConverhpClient from 'w-converhp/src/WConverhpClient.mjs'
 import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
 
@@ -16,7 +16,7 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @param {Object} [opt={}] 輸入設定物件，預設{}
  * @param {String} [opt.url='http://localhost:8080'] 輸入伺服器接口網址，原樣轉傳w-converhp，前端常用window.location.origin+window.location.pathname，預設為'http://localhost:8080'
  * @param {String} [opt.apiName='api'] 輸入API名稱字串，原樣轉傳w-converhp，預設'api'
- * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用。給予true時getToken為必填，未給時建構即同步拋錯。建構後每100ms呼叫getToken，待其回傳非空字串(可為promise)才建立資料同步(開始輪詢、取得函數清單與同步表資料)，不設等待上限，前一次呼叫回傳之promise未結束前不再呼叫；等待期間呼叫回傳物件之clearBroadcast或clearSync即取消等待，其後不再建立資料同步；getToken拋錯或reject時發出一則error事件(內容為其拋出值，含憑證樣式者經wsemi之maskDiagErr遮罩，見opt.funLog)並停止等待。非布林值視為false，預設false
+ * @param {Boolean} [opt.useWaitToken=false] 輸入是否等待有token才啟動，供驗證使用者已成功登入之用。給予true時getToken為必填，未給時建構即同步拋錯。建構後每100ms呼叫getToken，待其回傳非空字串(可為promise)才建立資料同步(開始輪詢、取得函數清單與同步表資料)，不設等待上限，前一次呼叫回傳之promise未結束前不再呼叫；等待期間呼叫回傳物件之clearBroadcast或clearSync即取消等待，其後不再建立資料同步；getToken拋錯或reject時發出一則error事件(內容為其拋出值，含憑證樣式者經wsemi之getDiag之diag.err遮罩；無error監聽者時之console輸出見opt.funLog)並停止等待。非布林值視為false，預設false
  * @param {Function} [opt.getToken=()=>''] 輸入取得使用者token的回調函數，可使用sync或async函數，轉交w-converhp(放於請求之headers，供伺服器verifyConn驗證)與w-serv-webdata(放於數據內之固定鍵__sysToken__，供伺服器getUserIdByToken取得使用者id)。輪詢(w-serv-broadcast)亦於每輪輪詢前呼叫本函數並帶其值，伺服端未將[sys:polling]列於sysFuncsPublic(嚴格設定，伺服端預設則三者皆公開)時，輪詢須帶可反查出非空userId之token，否則被拒絕而不綁定。輪詢之身分與clientId綁定：同一前端連線中途改以他人身分(本函數回傳他人之token，含無token與有token互換)會被伺服端拒絕(至舊綁定逾時約10秒為止，期間之表變更推播不補送；嚴格設定下無token者則持續被拒)，換身分(例如登出再以他人登入)請重新載入頁面或重建前端連線，不可只改本函數之回傳值。未給(undefined或null)時取預設；有給但非函數時建構即同步拋錯，預設()=>''
  * @param {String} [opt.tokenType='Bearer'] 輸入token類型字串，原樣轉傳w-converhp，預設'Bearer'
  * @param {Integer} [opt.sizeSlice=1024*1024] 輸入切片上傳檔案之切片檔案大小整數，單位為Byte，原樣轉傳w-converhp，須與伺服器端之sizeSlice一致，預設為1024*1024
@@ -30,11 +30,11 @@ import WServWebdataClient from 'w-serv-webdata/src/WServWebdataClient.mjs'
  * @param {Function} [opt.getRefreshTable=null] 輸入取得資料表時間戳有變更通知的回調函數，傳入參數為{tableName,timeTag}，預設null
  * @param {Function} [opt.getBeforeUpdateTableTags=null] 輸入更新各資料表時間戳前的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null
  * @param {Function} [opt.getAfterUpdateTableTags=null] 輸入更新各資料表時間戳後的回調函數，傳入參數為{oldTableTags,newTableTags}，預設null。上述四個回調函數原樣轉傳w-serv-webdata，有給但非函數時建構即同步拋錯(不論useWaitToken)
- * @param {Boolean} [opt.logDetail=false] 輸入w-serv-webdata之診斷輸出是否還原為完整細節(含資料值與錯誤原文，供除錯)，原樣轉傳w-serv-webdata。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要(例如回調函數於停止後才拋錯時，只輸出回調函數名稱與錯誤之類別、代碼)；憑證與token(網址帳密、password、token、Authorization、Bearer等鍵值，及opt.getToken所得者)無論如何皆遮罩為'***'(由wsemi之getDiag提供，範圍與限制見w-serv-webdata之opt.logDetail)。有給(非undefined、null)但非布林值時建構即同步拋錯(不論useWaitToken)，預設false
- * @param {Function} [opt.funLog=null] 輸入w-serv-webdata之診斷輸出函數(label, safe, detail)，原樣轉傳w-serv-webdata。給予時其診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(該錯誤之拷貝，含資料值與錯誤原文，憑證與token已遮罩為'***'；無細節者不傳)，供使用端遮罩或轉送至自己的日誌；其拋錯與回傳promise之reject皆被吞下，不影響本套件流程。有給(非undefined、null)但非函數時建構即同步拋錯(不論useWaitToken)。僅涵蓋w-serv-webdata自身之診斷輸出，不涵蓋本套件與其他下層之輸出：回傳之事件物件無error監聽者時，本套件改以console.error輸出其自發error之內容(例如getToken之拋出值)，該內容經wsemi之maskDiagErr遮罩憑證樣式(網址帳密、password、token、Authorization、Bearer等鍵值，遮罩為'***')，不含者原樣；本套件不持有token與後端秘密，不認識之裸字串密碼與token不在保證內，錯誤原文仍可能出現，宜掛上error監聽(交給監聽器之值，除getToken之拋出值外不經本套件遮罩)，預設null
+ * @param {Boolean} [opt.logDetail=false] 輸入診斷輸出是否還原為完整細節(含資料值與錯誤原文，供除錯)，原樣轉傳w-serv-webdata，本套件自身之診斷輸出(未監聽error時之console.error，見opt.funLog)亦依此選項(介面同wsemi之getDiag)。預設false時診斷輸出只含固定標籤與不含資料值、使用者id、token及錯誤原文之摘要(例如回調函數於停止後才拋錯時，只輸出回調函數名稱與錯誤之類別、代碼；本套件自身者為標籤'[w-serv-hapi] error'加安全摘要，見opt.funLog)；憑證與token(網址帳密、password、token、Authorization、Bearer等鍵值，及opt.getToken所得者)無論如何皆遮罩為'***'(由wsemi之getDiag提供，範圍與限制見w-serv-webdata之opt.logDetail)。有給(非undefined、null)但非布林值時建構即同步拋錯(不論useWaitToken)，預設false
+ * @param {Function} [opt.funLog=null] 輸入診斷輸出函數(label, safe, detail)，原樣轉傳w-serv-webdata，本套件自身之診斷輸出亦交給它。給予時診斷輸出只交給它而不寫console：label為固定標籤，safe為不含資料值之摘要，detail為完整細節(該錯誤之拷貝，含資料值與錯誤原文，憑證與token已遮罩為'***'；無細節者不傳)，供使用端遮罩或轉送至自己的日誌；其拋錯與回傳promise之reject皆被吞下，不影響本套件流程。有給(非undefined、null)但非函數時建構即同步拋錯(不論useWaitToken)。涵蓋本套件與w-serv-webdata之診斷輸出，不涵蓋其他下層(w-converhp、w-serv-broadcast、w-sync-webdata)自身之輸出。本套件自身之診斷輸出僅有一項：回傳之事件物件無error監聽者時其自發error之內容(getToken之拋出值或reject值、建立資料同步時之非預期例外)——label為固定標籤'[w-serv-hapi] error'，safe為{ from, errType, errCode }(from為固定詞彙之來源別：getToken、startSync；errType為錯誤類別；errCode為白名單內之系統與Node錯誤代碼；皆不含錯誤訊息文字與資料值)，detail為遮罩後之錯誤細節(經wsemi之getDiag，憑證樣式遮罩為'***'；本套件不持有token與後端秘密，不認識之裸字串密碼與token不在保證內)；未給funLog時預設console.error(label, safe)，opt.logDetail為true時改為console.error(label, detail)。有error監聽者時照常派發，不寫console亦不呼叫funLog(交給監聽器之值，除getToken之拋出值外不經本套件遮罩)。opt.useShowLog之基本資訊行不屬診斷輸出，不經funLog，預設null
  * @param {Function} [opt.onTrace=null] 輸入觀察回調函數，格式為(e)=>{}，供測試與診斷以事件(而非等待毫秒)同步，原樣轉傳w-serv-webdata(1.1.19起)，其再原樣轉交所包之w-serv-broadcast前端之opt.onTrace。事件種類(start、tick、request、result、emit、deliver、report、stop)與欄位、時機及回調之契約(同步呼叫、e為凍結物件、拋錯與回傳之rejection皆忽略、未給或非函數時忽略)以w-serv-webdata與w-serv-broadcast之JSDoc為準，本套件不增減事件；w-sync-webdata之onTrace不轉交(同w-serv-webdata)。w-converhp前端另有同名之opt.onTrace(重試退避與合併輪詢之事件)，本套件不轉交(本選項只到達w-serv-webdata)，預設null
  * @param {Boolean} [opt.useShowLog=true] 輸入是否使用console.log顯示基本資訊布林值，預設true
- * @returns {Object} 回傳事件物件，為w-converhp之瀏覽器端事件物件，建立資料同步時由w-serv-webdata於同一物件上擴充，建構後即可使用(useWaitToken=true而尚在等待token時亦然)。可監聽error事件，本套件、w-converhp與w-serv-webdata各層之error皆於其上發出，內容依來源層而異：w-converhp為每次請求嘗試失敗之訊息字串，w-serv-broadcast為{msg,err}，w-sync-webdata為{msg,err,tableName,timeTag}或{msg,err}，本套件為getToken之拋出值(含憑證樣式者經wsemi之maskDiagErr遮罩，不含者原樣)；本套件自發之error(等待token期間getToken之拋錯)於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時，本套件與w-serv-broadcast、w-sync-webdata之error改以console.error輸出，w-converhp與w-serv-webdata之error不輸出；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)。設定錯誤(例如useWaitToken=true而未給getToken、回調函數有給但非函數)於建構時同步拋出；執行環境須具AbortController(停止時中止在途請求所需)，缺者useWaitToken=false時於建構時同步拋出，true時於取得token後發出error事件且不建立資料同步。停止時呼叫其clearBroadcast與clearSync，兩者皆須呼叫(只呼叫clearSync時輪詢照常進行，Node行程不會結束；只呼叫clearBroadcast時資料同步之下層照常運作，停止時在途之同步表請求被中止而由其發出一則帶表名之error)，建立資料同步後兩者為w-serv-webdata所提供；等待token期間呼叫任一者即取消等待，於等待期間取得之函數參照於建立資料同步後呼叫亦轉為w-serv-webdata之同名函數；皆可重複呼叫。兩者皆呼叫後不再送出本套件與下層自身之請求(輪詢、取得函數清單、時間戳與同步表資料)，停止時在途者一併中止：不再重試、不再發出其各次嘗試失敗之error、不再為其呼叫getToken，亦不再撐住Node行程(各層之條件：w-converhp 2.1.8、w-serv-broadcast 1.1.9、w-serv-webdata 1.1.12以上，本套件之相依已滿足；dist以建置時內嵌之版本為準)；伺服器已開始之處理照常完成而其結果忽略。停止為終態，不再恢復輪詢；使用端經getServerMethods所取得之函數於停止後仍可呼叫，且其呼叫與直接呼叫本物件之execute、upload、download者皆不受停止影響：照常完成或依retryMain等之重試後失敗，其間各次嘗試失敗之error仍於本物件發出；其中upload於合併階段之輪詢依w-converhp之設計持續至伺服器端應用接受為止，兩端皆停止後即無上界(error不止、promise懸置、Node行程不結束)，故execute、upload、download宜自帶opt.signal(例如AbortSignal.timeout)以便中止(見w-converhp)。建立資料同步後token失效(例如登出)不會回到等待，輪詢與請求持續失敗並發出error，請停止後另建新實體等待。宜先停止前端再停止伺服器：先停伺服器時，前端於停止前之輪詢失敗皆發出error事件。useShowLog只控制本套件自身之輸出，下層之輸出(例如w-converhp之重試訊息)不受其控制。回傳物件上下層所掛之其他函數(例如updateTableTags、pollingTableTags)非本套件之契約
+ * @returns {Object} 回傳事件物件，為w-converhp之瀏覽器端事件物件，建立資料同步時由w-serv-webdata於同一物件上擴充，建構後即可使用(useWaitToken=true而尚在等待token時亦然)。可監聽error事件，本套件、w-converhp與w-serv-webdata各層之error皆於其上發出，內容依來源層而異：w-converhp為每次請求嘗試失敗之訊息字串，w-serv-broadcast為{msg,err}，w-sync-webdata為{msg,err,tableName,timeTag}或{msg,err}，本套件為getToken之拋出值(含憑證樣式者經wsemi之getDiag之diag.err遮罩，不含者原樣)；本套件自發之error(等待token期間getToken之拋錯)於建構子回傳後才發出，故須於new之後立即監聽；未監聽error時，本套件與w-serv-broadcast、w-sync-webdata之error改以console.error輸出，w-converhp與w-serv-webdata之error不輸出；本套件之輸出預設只含固定標籤'[w-serv-hapi] error'與錯誤類別、代碼之安全摘要，不含getToken之拋出值與其他錯誤訊息文字，細節由opt.logDetail或opt.funLog取得(見opt.funLog)；error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)。設定錯誤(例如useWaitToken=true而未給getToken、回調函數有給但非函數)於建構時同步拋出；執行環境須具AbortController(停止時中止在途請求所需)，缺者useWaitToken=false時於建構時同步拋出，true時於取得token後發出error事件且不建立資料同步。停止時呼叫其clearBroadcast與clearSync，兩者皆須呼叫(只呼叫clearSync時輪詢照常進行，Node行程不會結束；只呼叫clearBroadcast時資料同步之下層照常運作，停止時在途之同步表請求被中止而由其發出一則帶表名之error)，建立資料同步後兩者為w-serv-webdata所提供；等待token期間呼叫任一者即取消等待，於等待期間取得之函數參照於建立資料同步後呼叫亦轉為w-serv-webdata之同名函數；皆可重複呼叫。兩者皆呼叫後不再送出本套件與下層自身之請求(輪詢、取得函數清單、時間戳與同步表資料)，停止時在途者一併中止：不再重試、不再發出其各次嘗試失敗之error、不再為其呼叫getToken，亦不再撐住Node行程(各層之條件：w-converhp 2.1.8、w-serv-broadcast 1.1.9、w-serv-webdata 1.1.12以上，本套件之相依已滿足；dist以建置時內嵌之版本為準)；伺服器已開始之處理照常完成而其結果忽略。停止為終態，不再恢復輪詢；使用端經getServerMethods所取得之函數於停止後仍可呼叫，且其呼叫與直接呼叫本物件之execute、upload、download者皆不受停止影響：照常完成或依retryMain等之重試後失敗，其間各次嘗試失敗之error仍於本物件發出；其中upload於合併階段之輪詢依w-converhp之設計持續至伺服器端應用接受為止，兩端皆停止後即無上界(error不止、promise懸置、Node行程不結束)，故execute、upload、download宜自帶opt.signal(例如AbortSignal.timeout)以便中止(見w-converhp)。建立資料同步後token失效(例如登出)不會回到等待，輪詢與請求持續失敗並發出error，請停止後另建新實體等待。宜先停止前端再停止伺服器：先停伺服器時，前端於停止前之輪詢失敗皆發出error事件。useShowLog只控制本套件自身之輸出，下層之輸出(例如w-converhp之重試訊息)不受其控制。回傳物件上下層所掛之其他函數(例如updateTableTags、pollingTableTags)非本套件之契約
  * @example
  *
  * // import fs from 'fs'
@@ -316,12 +316,15 @@ function WServHapiClient(opt = {}) {
     //emitError, 本套件自發之error(等待token期間getToken之拋錯)經wsemi之evEmit發出, 監聽器之同步拋錯不使行程崩潰
     //why: 原於catch內對事件物件emit, 失敗時再拋出而成未處理之rejection, 使Node行程崩潰
     //無error監聽者時改以console.error輸出, 失敗不可無聲(同w-serv-broadcast、w-sync-webdata; CLAUDE_rulebook.md之R10、R11)
-    //遮罩一律經wsemi之maskDiagErr(R15; 診斷輸出與遮罩由wsemi單一擁有, 本套件不另寫), 本套件不持有靜態秘密(token為getToken之動態回傳值, 取得後由w-serv-webdata之token簿記住), 故不給秘密清單, 只套通用憑證樣式(網址帳密、password=、token=、Authorization、Bearer等), 不含者原樣(身分不變):
-    //①console出口(無error監聽者)一律遮罩; ②交給error監聽器之值原樣, 但getToken之拋出值或reject值為使用端回調所給之外來值, 於catch站點(checkToken)先遮罩, 與useWaitToken=false時由w-serv-webdata遮罩getToken之拋錯一致;
+    //一律經wsemi之getDiag之出口diag(R16; 診斷輸出與遮罩由wsemi單一擁有, 本套件不另寫): 預設只輸出固定標籤'[w-serv-hapi] error'與{ from(固定詞彙之來源別), errType, errCode }, opt.logDetail為true時輸出遮罩憑證後之細節, opt.funLog給予時只交給它
+    //why: getToken之拋出值與reject值為使用端回調所給之外來值, 可含使用者識別與使用端自填之值, 其不含憑證樣式者遮罩不會處理, 原樣印出會寫入使用端日誌
+    //本套件不持有靜態秘密(token為getToken之動態回傳值, 取得後由w-serv-webdata之token簿記住), 故不給秘密清單, 只套通用憑證樣式(網址帳密、password=、token=、Authorization、Bearer等), 不含者原樣(身分不變):
+    //①console出口(無error監聽者)依上; ②交給error監聽器之值原樣, 但getToken之拋出值或reject值為使用端回調所給之外來值, 於catch站點(checkToken)先經diag.err遮罩, 與useWaitToken=false時由w-serv-webdata遮罩getToken之拋錯一致, 有監聽者時不寫console亦不呼叫funLog;
     //startSync之例外只會是w-serv-webdata建構時之固定詞彙錯誤(設定已先檢核, 建構中不執行使用端回調), 不遮罩; 不以近期取得之token作秘密: 其只會作用於上述固定詞彙錯誤(挖空後可反推短token), getToken拋錯時亦恆無已取得之token
-    let emitError = (err) => {
+    let diag = getDiag(opt, { safeKeys: ['from'], nested: ['err'] })
+    let emitError = (err, from) => {
         if (instWConverClient.listenerCount('error') === 0) {
-            console.error('[w-serv-hapi]', maskDiagErr(err))
+            diag('[w-serv-hapi] error', { from, ...diag.brief(err) }, () => err, 'error')
             return
         }
         evEmit(instWConverClient, 'error', [err], { tag: 'w-serv-hapi' })
@@ -381,7 +384,7 @@ function WServHapiClient(opt = {}) {
         }
         catch (err) {
             if (!cleared) {
-                emitError(maskDiagErr(err)) //getToken之拋出值與reject值為使用端回調所給之外來值
+                emitError(diag.err(err), 'getToken') //getToken之拋出值與reject值為使用端回調所給之外來值
             }
             return
         }
@@ -399,7 +402,7 @@ function WServHapiClient(opt = {}) {
             startSync()
         }
         catch (err) {
-            emitError(err) //設定已於建構時檢核, 此處僅剩非預期之例外
+            emitError(err, 'startSync') //設定已於建構時檢核, 此處僅剩非預期之例外
         }
     }
     tWait = setTimeout(checkToken, 0)

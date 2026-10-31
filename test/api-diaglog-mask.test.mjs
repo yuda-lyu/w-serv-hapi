@@ -11,16 +11,17 @@ let { cases, mkCtx, verify } = diagCases
 
 
 /**
- * 驗證本套件自身之console出口與自發error之遮罩接線(規則帳本R15; 診斷輸出與遮罩由wsemi單一擁有, 規格為主控dspec〈診斷輸出與遮罩〉)
+ * 驗證本套件自身之診斷輸出(console出口與funLog之細節)與自發error之遮罩接線(規則帳本R15、R16; 診斷輸出與遮罩由wsemi單一擁有, 規格為主控dspec〈診斷輸出與遮罩〉)
  *
  * 規格來源: WServHapiServer與WServHapiClient之JSDoc
- * - Server opt.funLog「回傳之事件物件無error監聽者時，本套件改以console.error輸出error事件之內容(含下層送來者)，該內容經wsemi之maskDiagErr遮罩憑證樣式(網址帳密、password、token、Authorization、Bearer等鍵值，遮罩為'***')，不含者原樣…交給監聽器之值不經本套件遮罩」
- * - Client opt.funLog「…本套件改以console.error輸出其自發error之內容(例如getToken之拋出值)，該內容經wsemi之maskDiagErr遮罩憑證樣式…」與@returns「本套件為getToken之拋出值(含憑證樣式者經wsemi之maskDiagErr遮罩，不含者原樣)」
+ * - Server opt.funLog「…本套件自身之診斷輸出僅有一項：回傳之事件物件無error監聽者時之error事件內容…detail為遮罩後之錯誤細節(經wsemi之getDiag，憑證樣式遮罩為'***')；未給funLog時預設console.error(label, safe)，opt.logDetail為true時改為console.error(label, detail)。有error監聽者時…交給監聽器之值不經本套件遮罩」
+ * - Client opt.funLog「…detail為遮罩後之錯誤細節…」與@returns「本套件為getToken之拋出值(含憑證樣式者經wsemi之getDiag之diag.err遮罩，不含者原樣)」
  *
  * 本套件是轉傳端: 不持有靜態秘密(token為getToken之動態值，由w-serv-webdata之token簿記住)，故只套通用憑證樣式，不宣告秘密清單;
- * 下層對自己所發error之遮罩由下層負責(w-serv-webdata之診斷輸出與遮罩見其測試)，本檔測的是「本套件各console出口與自發error確實經wsemi之maskDiagErr」
+ * 下層對自己所發error之遮罩由下層負責(w-serv-webdata之診斷輸出與遮罩見其測試)，本檔測的是「本套件各細節出口(logDetail之console、funLog之detail)與交給監聽器之值確實經wsemi之遮罩」;
+ * 預設輸出(只含標籤與安全摘要)見api-diaglog-console，故本檔之console出口案一律給logDetail:true以取得細節
  *
- * 站點全集(Grep console\.與emitError，見規則帳本R15之站點表):
+ * 站點全集(Grep console\.與emitError，見規則帳本R16之站點表):
  * - 伺服端console.error出口(emitError無監聽者): 下層轉送(inst.emit)、clearDownstream之catch、啟動失敗(pmStart.catch)、stop內server.stop之catch，皆經同一出口
  * - 前端console.error出口(emitError無監聽者): getToken之拋出值與reject值(checkToken之catch)、startSync之catch
  * - 前端交給監聽器之值: getToken之拋出值與reject值先遮罩(外來值); startSync之例外(w-serv-webdata建構時之固定詞彙錯誤)與伺服端交給監聽器之值原樣(轉送端不改下游之值)
@@ -32,12 +33,12 @@ describe('api-diaglog-mask', function() {
     let URL_CRED = `postgres://alice:${PW}@db.example.com:5432/app`
     let BEARER = 'abc.def.ghi'
 
-    //capture, 擷取本行程以[w-serv-hapi]為前綴之console.error輸出(其餘照常輸出); 回傳lines, 每項為前綴之後的引數陣列
+    //capture, 擷取本行程以[w-serv-hapi]為前綴(標籤之首段)之console.error輸出(其餘照常輸出); 回傳lines, 每項為標籤之後的引數陣列(logDetail:true時首項為遮罩後細節)
     let capture = () => {
         let lines = []
         let org = console.error
         console.error = (...args) => {
-            if (args[0] === '[w-serv-hapi]') {
+            if (typeof args[0] === 'string' && args[0].startsWith('[w-serv-hapi]')) {
                 lines.push(args.slice(1))
                 return
             }
@@ -61,6 +62,7 @@ describe('api-diaglog-mask', function() {
             port,
             useInert: false,
             useShowLog: false,
+            logDetail: true, //console出口取遮罩後之細節(預設只輸出摘要, 見api-diaglog-console)
             pathUploadTemp: `${fd}/uploadTemp`,
             fpTableTags: `${fd}/tableTags.json`,
             ...extra,
@@ -104,6 +106,7 @@ describe('api-diaglog-mask', function() {
             cli = new WServHapiClient({
                 url: `http://localhost:${reserved.closed}`,
                 useShowLog: false,
+                logDetail: true, //console出口取遮罩後之細節
                 useWaitToken: true,
                 getToken,
             })
@@ -221,7 +224,7 @@ describe('api-diaglog-mask', function() {
             assert.strict.deepEqual([lines[0][0].message.includes('conflicts with existing'), lines[0][0].message.includes('password=***'), str(lines[0][0]).includes(PW)], [true, true, false])
         })
 
-        it('不含憑證之error: console出口輸出同一物件(身分不變, 非副本)', async function() {
+        it('不含憑證之error: console出口之細節為同類別同訊息之副本(細節一律為拷貝; 身分不變只適用於交給監聽器之值), 原物件不被改動', async function() {
             let { lines, restore } = capture()
             let e = new Error('plain failure')
             try {
@@ -233,7 +236,7 @@ describe('api-diaglog-mask', function() {
                 restore()
             }
             assert.strict.deepEqual(lines.length, 1)
-            assert.strict.deepEqual(lines[0][0] === e, true)
+            assert.strict.deepEqual([lines[0][0] instanceof Error, lines[0][0] !== e, lines[0][0].message, e.message], [true, true, 'plain failure', 'plain failure'])
         })
 
     })
@@ -306,6 +309,7 @@ describe('api-diaglog-mask', function() {
                     cli = new WServHapiClient({
                         url: `http://localhost:${reserved.closed}`,
                         useShowLog: false,
+                        logDetail: true, //console出口取遮罩後之細節
                         useWaitToken: true,
                         getToken: () => {
                             return 'token-for-test'
@@ -350,13 +354,16 @@ describe('api-diaglog-mask', function() {
     describe('共用語料(wsemi/src/_diagCases.mjs)之接線: 依本套件適用之子集', function() {
 
         //WIRE, 語料中wire:true之全部案例對本套件之適用性(每案必有判定; 語料新增wire案例而未判定者轉紅, 提醒補判定)
-        //run: 經本套件之出口重跑; 其餘為不適用及理由
+        //run: 經本套件之出口重跑(T07、K09、P01經細節出口; R01經交給監聽器之值); 其餘為不適用及理由
+        //2026-10-31(R16)起本套件經wsemi之getDiag輸出細節(diag(label, safe, detail)站點1處, 兩端各1), 故不需已登錄秘密之細節拷貝案(K01、V02、E01、E07、S07)仍不適用(不宣告秘密清單), 不需秘密之K09、P01改為重跑
         let NA_SECRET = '需已登錄之秘密(getDiagSecrets導出): 本套件不持有靜態秘密(token為getToken之動態值, 由w-serv-webdata之token簿記住), 不宣告秘密清單; 以不宣告結構性滿足(無從挖空固定詞彙)'
-        let NA_COPY = '細節拷貝(maskDiagCopy)出口: 本套件無diag(label, safe, detail)站點, 診斷細節出口屬w-serv-webdata'
-        let NA_DIAG = '診斷出口(getDiag、genDiagFunLog、getDiagBriefErr): 本套件不呼叫'
+        let NA_COPY = '細節拷貝(maskDiagCopy)之案例, 需已登錄之秘密(ctx.sec): 本套件不宣告秘密清單; 拷貝規則由wsemi單一擁有並於其內測以同一語料測過, 本套件之細節出口以不需秘密之K09、P01與T07接線'
+        let NA_DIAG = 'wsemi自身函數(getDiag、genDiagFunLog、getDiagBriefErr、getDiagSecrets)之行為: 由wsemi內測以同一語料測過; 本套件只經getDiag之出口diag與diag.brief、diag.err使用, 其接線(標籤、摘要、細節、funLog)由api-diaglog-console測'
         let WIRE = {
             T07: 'run',
             R01: 'run',
+            K09: 'run',
+            P01: 'run',
             T01: NA_SECRET,
             R02: NA_SECRET,
             R04: NA_SECRET,
@@ -364,17 +371,18 @@ describe('api-diaglog-mask', function() {
             R11: '期望含detail側(maskDiagCopy); reject側(未宣告之路徑不遮、身分不變)以R01之身分不變涵蓋, 本套件不宣告paths',
             R12: '期望含detail側(maskDiagCopy); reject側(未宣告之帳號不遮、身分不變)以R01之身分不變涵蓋, 本套件不宣告username',
             K01: NA_COPY,
-            K09: NA_COPY,
             V02: NA_COPY,
             E01: NA_COPY,
             E07: NA_COPY,
-            P01: NA_COPY,
             S07: NA_COPY,
             C01: NA_DIAG,
+            C14: NA_DIAG,
             O01: NA_DIAG,
             O15: NA_DIAG,
             A01: NA_DIAG,
             A07: NA_DIAG,
+            A11: NA_DIAG,
+            U22: NA_DIAG,
         }
 
         it('語料中wire:true之案例皆已判定適用性(無遺漏、無已不存在者)', function() {
@@ -389,10 +397,11 @@ describe('api-diaglog-mask', function() {
             return c
         }
 
-        //ROUTES, 本套件三條出口: 傳入值, 回傳該出口實際交出之值
+        //ROUTES, 本套件之出口: 傳入值, 回傳該出口實際交出之值; detail為true者為細節出口(console之logDetail、funLog之detail), 其值為遮罩後之拷貝
         let ROUTES = [
             {
-                name: '伺服端console出口',
+                name: '伺服端console出口(logDetail)',
+                detail: true,
                 run: async (v) => {
                     let { lines, restore } = capture()
                     try {
@@ -408,7 +417,20 @@ describe('api-diaglog-mask', function() {
                 },
             },
             {
-                name: '前端console出口(getToken拋出)',
+                name: '伺服端funLog之detail',
+                detail: true,
+                run: async (v) => {
+                    let calls = []
+                    await serverRun('diaglog-mask-corpus', { extra: { funLog: (...args) => calls.push(args) } }, async ({ inst }) => {
+                        inst.emit('error', v)
+                    })
+                    assert.strict.deepEqual(calls.length, 1, str(calls))
+                    return calls[0][2]
+                },
+            },
+            {
+                name: '前端console出口(logDetail, getToken拋出)',
+                detail: true,
                 run: async (v) => {
                     let { lines } = await clientRun(() => {
                         throw v
@@ -419,6 +441,7 @@ describe('api-diaglog-mask', function() {
             },
             {
                 name: '前端交給監聽器之值(getToken拋出)',
+                detail: false,
                 run: async (v) => {
                     let { got } = await clientRun(() => {
                         throw v
@@ -438,13 +461,28 @@ describe('api-diaglog-mask', function() {
                 assert.strict.deepEqual(verify(c, out, ctx), null)
             })
 
-            it(`R01(不含憑證之錯誤回傳同一物件)經${route.name}身分不變`, async function() {
-                let c = byId('R01')
-                let ctx = mkCtx()
-                let e = c.make(ctx)
-                let out = await route.run(e)
-                assert.strict.deepEqual(verify(c, [e, out], ctx), null)
-            })
+            //R01(身分不變)屬對外錯誤值(交給監聽器之值); 細節為拷貝, 不適用
+            if (!route.detail) {
+                it(`R01(不含憑證之錯誤回傳同一物件)經${route.name}身分不變`, async function() {
+                    let c = byId('R01')
+                    let ctx = mkCtx()
+                    let e = c.make(ctx)
+                    let out = await route.run(e)
+                    assert.strict.deepEqual(verify(c, [e, out], ctx), null)
+                })
+            }
+
+            //K09(憑證鍵名之值整體***)與P01(存取器不執行)不需已登錄之秘密, 經細節出口重跑
+            if (route.detail) {
+                for (let id of ['K09', 'P01']) {
+                    it(`${id}(${id === 'K09' ? '憑證鍵名之值整體***' : '存取器屬性不執行'})經${route.name}`, async function() {
+                        let c = byId(id)
+                        let ctx = mkCtx()
+                        let out = await route.run(c.make(ctx))
+                        assert.strict.deepEqual(verify(c, out, ctx), null)
+                    })
+                }
+            }
 
         }
 

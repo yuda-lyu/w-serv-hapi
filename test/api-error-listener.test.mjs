@@ -10,8 +10,8 @@ let { portOf } = wPorts
  *
  * 規格來源:
  * - WServHapiServer之@returns「可監聽error事件…使用端error監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)…ready…啟動失敗時以原錯誤reject；stop…恆resolve」
- *   「涵蓋…執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)…未監聽error時改以console.error輸出(前綴[w-serv-hapi])」
- * - WServHapiClient之@returns「本套件自發之error…監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)」「未監聽error時，本套件…之error改以console.error輸出」
+ *   「涵蓋…執行期錯誤(含w-converhp、w-serv-webdata、w-serv-broadcast、w-sync-webdata經本套件轉送者)…未監聽error時改以console.error輸出(前綴[w-serv-hapi])，預設只輸出固定標籤與錯誤類別、代碼之安全摘要…細節由opt.logDetail或opt.funLog取得」
+ * - WServHapiClient之@returns「本套件自發之error…監聽器之同步拋錯不會使行程崩潰(改以console.error輸出)」「未監聽error時，本套件…之error改以console.error輸出…預設只含固定標籤'[w-serv-hapi] error'與錯誤類別、代碼之安全摘要…細節由opt.logDetail或opt.funLog取得」
  *
  * 以子行程執行(test/tools/child-exit.mjs、test/tools/child-client.mjs): mocha會攔截未捕捉之錯誤, 於測試行程內觀察不到崩潰
  */
@@ -59,12 +59,28 @@ describe('api-error-listener', function() {
         return err.split('[w-serv-hapi]').slice(1)
     }
 
-    it('伺服器: 未監聽error時, 經本套件轉送之下層監聽器拋錯與本套件自發之啟動失敗皆以[w-serv-hapi]前綴輸出至stderr', async function() {
+    it('伺服器: 未監聽error時, 經本套件轉送之下層監聽器拋錯與本套件自發之啟動失敗皆以[w-serv-hapi]前綴輸出至stderr(預設只含標籤與安全摘要, 不含錯誤原文)', async function() {
         //伺服器A: 通訊實體之clientChange監聽拋錯(w-serv-broadcast所派發, 經本套件轉送); 伺服器B: apis與通訊路由衝突而啟動失敗(本套件自發, 不綁定)
-        //修正前兩者皆靜默: 本套件之轉送監聽使下層判定有人在聽, 外層無人聽即遺失
+        //修正前兩者皆靜默: 本套件之轉送監聽使下層判定有人在聽, 外層無人聽即遺失; 2026-10-31(R16)起預設只輸出安全摘要
         let fd = useTempFolder('error-listener-none-server')
         try {
             let r = await runChild(['test/tools/child-exit.mjs', 'no-listener-server', String(portOf('api-error-listener', 0)), fd, String(portOf('api-error-listener', 1))])
+            let segs = errLinesOf(r.err)
+            assert.strict.deepEqual(marks(r.out), ['DONE'])
+            assert.strict.deepEqual([r.exited, r.code], [true, 0])
+            assert.strict.deepEqual(segs.some((s) => s.includes('error') && s.includes('from: \'downstream\'')), true, `stderr: ${r.err}`)
+            assert.strict.deepEqual(segs.some((s) => s.includes('error') && s.includes('from: \'start\'')), true, `stderr: ${r.err}`)
+            assert.strict.deepEqual([r.err.includes('boom-downstream-listener'), r.err.includes('conflicts with existing')], [false, false], `stderr: ${r.err}`)
+        }
+        finally {
+            removeTempFolder(fd)
+        }
+    })
+
+    it('伺服器: 未監聽error而給logDetail:true時, stderr含遮罩後之錯誤原文(下層監聽器拋錯、啟動失敗)', async function() {
+        let fd = useTempFolder('error-listener-none-server-detail')
+        try {
+            let r = await runChild(['test/tools/child-exit.mjs', 'no-listener-server', String(portOf('api-error-listener', 0)), fd, String(portOf('api-error-listener', 1)), 'detail'])
             let segs = errLinesOf(r.err)
             assert.strict.deepEqual(marks(r.out), ['DONE'])
             assert.strict.deepEqual([r.exited, r.code], [true, 0])
@@ -76,8 +92,17 @@ describe('api-error-listener', function() {
         }
     })
 
-    it('前端: 未監聽error時, 本套件自發之error(等待token期間getToken拋錯)以[w-serv-hapi]前綴輸出至stderr', async function() {
+    it('前端: 未監聽error時, 本套件自發之error(等待token期間getToken拋錯)以[w-serv-hapi]前綴輸出至stderr(預設只含標籤與安全摘要, 不含拋出值)', async function() {
         let r = await runChild(['test/tools/child-client.mjs', 'no-listener'], { timeout: 10000 })
+        let segs = errLinesOf(r.err)
+        assert.strict.deepEqual(marks(r.out), ['DONE'])
+        assert.strict.deepEqual([r.exited, r.code], [true, 0])
+        assert.strict.deepEqual(segs.length, 1, `stderr: ${r.err}`)
+        assert.strict.deepEqual([segs[0].includes('from: \'getToken\''), r.err.includes('token-err-no-listener')], [true, false], `stderr: ${r.err}`)
+    })
+
+    it('前端: 未監聽error而給logDetail:true時, stderr含遮罩後之getToken拋出值', async function() {
+        let r = await runChild(['test/tools/child-client.mjs', 'no-listener-detail'], { timeout: 10000 })
         let segs = errLinesOf(r.err)
         assert.strict.deepEqual(marks(r.out), ['DONE'])
         assert.strict.deepEqual([r.exited, r.code], [true, 0])

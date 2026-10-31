@@ -66,6 +66,12 @@
 - **`run_in_background` 之 Bash 須明給 `timeout`**:鎖佇列等待可達數十分鐘;原以前景 `timeout:600000` 排鎖,被移背景後 10 分鐘即被終止(全套測試任務因此被殺,2026-10-30),須 `run_in_background:true` 並給 `timeout:7200000`;排鎖與長作業合併成一支腳本一次取鎖(階段 A 全綠才進修前紅與變異,日誌落 `./tmp`),每支腳本內 `spawnSync` 設 `timeout` 與 `--exit`.
 - **工作樹 CRLF**:變異腳本之多行錨點轉為檔案實際換行(`includes('\r\n')`),且每個錨點須恰出現 1 次,否則標 INCONCLUSIVE 不執行.
 
+- **診斷輸出「只遮憑證」仍會洩漏使用者識別**(2026-10-31,排程第 158 項):`maskDiagErr` 只遮憑證樣式,`getUserIdByToken` 之拒絕值(如 `lookup failed for user-alice-4821`)、`getToken` 之拋出值不含憑證樣式即原樣印出.判準不是「遮罩有沒有包」,而是「預設輸出能不能含使用端自填之值」——console 出口改預設只輸出標籤加 `{from,errType,errCode?}`(wsemi `getDiag`),細節走 `logDetail`／`funLog`.修前紅之探針要用**不含憑證樣式**之值(含憑證樣式之值在舊碼已被遮,測不出本缺陷).
+- **測 `getDiag` 出口之斷言要連 `label` 一起比**:`diag(label, safe, …)` 之 console 引數為 `(label, safe)` 或 `(label, detail)`,不是原本之 `('[w-serv-hapi]', value)`;`capture` 之過濾改 `startsWith('[w-serv-hapi]')`,斷言整個 `lines[0]` 之 deepEqual,以同時守住「無多餘引數」與「摘要之鍵集合」(safeKeys 白名單外之鍵會被 getDiag 丟棄,故「摘要夾帶 msg」之變異須同時加 `safeKeys` 才成立).
+- **真實路徑觸發 `getUserIdByToken` 拒絕值走到本套件之 console 出口**:伺服端不掛 error 監聽,用 `WConverhpClient.execute('[sys:getFuncList]', { __sysInputArgs__: [], __sysToken__: 't' })` 呼叫,w-serv-webdata 對拒絕值經 `evEmit(inst,'error',[diag.err(err)])` 發出,本套件之轉送監聽接到;不需 DB.以 `waitFor(() => lines.length >= 1)` 等出口(先回應再發事件).
+- **wsemi 升版會讓共用語料之 wire 判定表轉紅**(1.9.31→1.9.33 新增 A11、C14、U22):屬預期之「新增案例須判定」守則,逐案讀 `add(...)` 之 `call`/`make` 判斷是否需已登錄之秘密;不需秘密者(K09、P01)可經細節出口重跑.
+- **變異腳本直接對 repo 之 src 施變異時**:先備份至 `./tmp/…/backup`,每項後以 `copyFileSync` 還原,結束以 sha256 回驗逐位元組一致;此期間不得編輯 src 與被跑之測試檔(2026-10-31:以 `quiet-run --lock` 包 nohup 背景行程,排鎖與執行同一支腳本,期間只改文件).
+
 ## 選項值域
 
 - **預設落在寬鬆側之選項,「無效取預設」就是 fail-open**:useInert 預設公開、pathStaticFiles 預設公開 dist,給錯值(環境變數之字串 `'false'`、空字串)即公開.判準不是「有沒有檢核」,而是「無效時落在哪一側」;預設即安全側者(useDbOrm=false、apis=[]、useShowLog)才可沿用「非 X 視為未指定」(2026-10-13,R9).

@@ -40,12 +40,13 @@ let alloc = [
     ['api-exposure', 13, '第0個供建構即同步拋錯之情境共用(不綁定); 第1至4個供useInert與pathStaticFiles; 第5至12個供corsOrigins各值'],
     ['api-verify-upload', 3, '未註冊upload監聽、註冊upload監聽、verifyConn非函數各起一台'],
     ['api-client-wait-token', 2, '取得token後建立資料同步、等待期間取得之停止函數參照各起一台'],
-    ['api-error-listener', 2, '供子行程: 建構期error、啟動失敗(以net佔用)各一; 未掛error監聽之伺服端情境依序共用(第0個起伺服器、第1個供路由衝突而不綁定)'],
+    ['api-error-listener', 2, '供子行程: 建構期error、啟動失敗(以net佔用)各一; 未掛error監聽之伺服端情境(預設與logDetail兩種)依序共用(第0個起伺服器、第1個供路由衝突而不綁定)'],
     ['api-client-stop', 5, '供子行程之前端停止情境: 取得函數清單後、首次輪詢成功時、同步表select在途時各一; 第3個供$fapi在途; 第4個供先停伺服器之情境'],
     ['api-sys-funcs', 8, '各設定各起一台: 第0至6個依序為未給sysFuncsPublic、只公開[sys:getFuncList]、公開[sys:getFuncList]與[sys:getTableTags]、空陣列、只公開[sys:polling]、getUserIdByToken對空token拒絕之未給、不開資料通道; 第7個供建構即同步拋錯(不綁定)與null之情境依序共用'],
     ['api-diaglog', 2, '第0個供建構即同步拋錯(不綁定)與有效值之情境依序共用; 第1個供前端診斷輸出各情境依序共用'],
     ['api-diaglog-mask', 2, '第0個供伺服端各情境依序共用(起伺服器); 第1個供路由衝突而啟動失敗之情境(不綁定)'],
     ['api-ontrace', 1, '伺服端onTrace情境起伺服器; 前端情境指向reserved.closed(不連線成功)'],
+    ['api-diaglog-console', 2, '第0個供伺服端各情境依序共用(起伺服器); 第1個供啟動失敗情境(以net先行占用, 其上不起伺服器成功)'],
 ]
 
 //segs, 依 alloc 之順序自 base 起連續配發

@@ -16,7 +16,7 @@ import WServHapiClient from '../../src/WServHapiClient.mjs'
  * - mode 'listener-throw-ctor': 建構期間發生error(pathUploadTemp無法建立), 其error監聽器同步拋錯; 之後照常ready與stop
  * - mode 'listener-throw-start': 先以net佔用port而使啟動失敗, 其error監聽器同步拋錯; 之後照常stop
  *   以上兩者之輸出逐行印出, 行程須以離開碼0結束(未崩潰)
- * - mode 'no-listener-server': 不掛error監聽: 伺服器A之通訊實體上之clientChange監聽拋錯(下層之監聽器拋錯, 經本套件轉送), 伺服器B之apis與通訊路由衝突而啟動失敗(本套件自發, 不綁定, 用第5個參數之port); 兩者須以[w-serv-hapi]前綴出現於stderr
+ * - mode 'no-listener-server': 不掛error監聽: 伺服器A之通訊實體上之clientChange監聽拋錯(下層之監聽器拋錯, 經本套件轉送), 伺服器B之apis與通訊路由衝突而啟動失敗(本套件自發, 不綁定, 用第5個參數之port); 兩者須以[w-serv-hapi]前綴出現於stderr(預設只含標籤與安全摘要; 第6個參數給'detail'時給logDetail:true, 含遮罩後之錯誤原文)
  * - mode 'stop-*': 前端停止之情境(CLAUDE_rulebook.md之R12), 經本套件前端(retryMain=3)於各在途點停止前端, 見runStop
  *
  * why 用子行程: mocha之worker會被重用且自有計時器, 無法於測試行程內以活動資源數斷言; 並會攔截未捕捉之錯誤, 觀察不到行程崩潰
@@ -137,8 +137,11 @@ else if (mode === 'listener-throw-start') {
 }
 else if (mode === 'no-listener-server') {
 
+    //optLog, 第6個參數為'detail'時兩台伺服器皆給logDetail:true(細節出口, 供測試取得遮罩後之錯誤原文); 未給時為預設(只輸出標籤與安全摘要)
+    let optLog = process.argv[6] === 'detail' ? { logDetail: true } : {}
+
     //伺服器A: 通訊實體上之clientChange監聽首次即拋錯, 由前端之首次輪詢觸發
-    let wsrv = new WServHapiServer(base)
+    let wsrv = new WServHapiServer({ ...base, ...optLog })
     await wsrv.ready()
     let inst = await wsrv.getInstWConverServer()
     let thrown = false
@@ -166,6 +169,7 @@ else if (mode === 'no-listener-server') {
     //伺服器B: apis與通訊路由衝突而啟動失敗, 於server.route即拋錯而不綁定
     let wsrv2 = new WServHapiServer({
         ...base,
+        ...optLog,
         port: Number(process.argv[5]),
         pathUploadTemp: `${fd}/uploadTemp-b`,
         fpTableTags: `${fd}/tableTags-b.json`,

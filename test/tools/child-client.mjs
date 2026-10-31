@@ -9,7 +9,8 @@ import wPorts from './ports.mjs'
  * - mode 'ctor-throw': useWaitToken=true而未給getToken, 建構同步拋錯後由使用端catch
  * - mode 'wait-clear': useWaitToken=true而getToken恆回傳空字串, 等待中呼叫clearBroadcast
  * - mode 'listener-throw': useWaitToken=true而getToken拋錯, 其error監聽器同步拋錯
- * - mode 'no-listener': useWaitToken=true而getToken拋錯, 不掛error監聽: 本套件自發之error須以[w-serv-hapi]前綴出現於stderr
+ * - mode 'no-listener': useWaitToken=true而getToken拋錯, 不掛error監聽: 本套件自發之error須以[w-serv-hapi]前綴出現於stderr(預設只含標籤與安全摘要)
+ * - mode 'no-listener-detail': 同上而給logDetail:true, stderr含遮罩後之錯誤原文
  * 之後不再有任何動作; 輸出逐行印出, 行程須以離開碼0於時限內自行結束
  *
  * why 用子行程: mocha會攔截未捕捉之錯誤, 觀察不到行程崩潰; 其worker會被重用且自有計時器, 亦無法斷言行程可自行結束
@@ -69,11 +70,13 @@ else if (mode === 'listener-throw') {
     await sleep(300)
     console.log('DONE')
 }
-else if (mode === 'no-listener') {
+else if (mode === 'no-listener' || mode === 'no-listener-detail') {
+    //no-listener-detail: 給logDetail:true(細節出口, 含遮罩後之錯誤原文); no-listener為預設(只輸出標籤與安全摘要)
     new WServHapiClient({
         url,
         useShowLog: false,
         useWaitToken: true,
+        ...(mode === 'no-listener-detail' ? { logDetail: true } : {}),
         getToken: () => {
             throw new Error('token-err-no-listener')
         },
