@@ -485,7 +485,7 @@ client()
 
 Add script for w-serv-hapi-client.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-serv-hapi@1.1.15/dist/w-serv-hapi-client.umd.js"></script>
+<script src="https://yuda-lyu.github.io/w-serv-hapi/dist/w-serv-hapi-client.umd.js"></script>
 ```
 
 #### Example for w-serv-hapi-client:
