@@ -1,5 +1,5 @@
 /*!
- * w-serv-hapi-client v1.1.18
+ * w-serv-hapi-client v1.1.19
  * (c) 2018-2021 yuda-lyu(semisphere)
  * Released under the MIT License.
  */
