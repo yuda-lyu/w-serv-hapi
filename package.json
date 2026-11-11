@@ -1,15 +1,15 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.1.23",
+  "version": "1.1.24",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
-    "w-converhp": "^2.1.24",
-    "w-serv-webdata": "^1.1.30",
-    "wsemi": "^1.9.55"
+    "w-converhp": "^2.1.25",
+    "w-serv-webdata": "^1.1.31",
+    "wsemi": "^1.9.56"
   },
   "devDependencies": {
-    "w-orm-lowdb": "^1.0.52",
-    "w-package-tools": "^1.1.25"
+    "w-orm-lowdb": "^1.0.54",
+    "w-package-tools": "^1.1.26"
   },
   "scripts": {
     "test": "mocha --parallel \"test/*.test.mjs\" --timeout 180000",
