@@ -1,10 +1,10 @@
 {
   "name": "w-serv-hapi",
-  "version": "1.1.43",
+  "version": "1.1.44",
   "main": "dist/w-serv-hapi-server.umd.js",
   "dependencies": {
-    "w-converhp": "^2.1.42",
-    "w-serv-webdata": "^1.1.52",
+    "w-converhp": "^2.1.43",
+    "w-serv-webdata": "^1.1.53",
     "wsemi": "^1.9.72"
   },
   "devDependencies": {
